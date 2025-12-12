@@ -39,11 +39,114 @@
     <script src="/static/js/api.js"></script>
     <script src="/static/js/navigation.js"></script>
     <script>
-        (function () {
-            if (!requireAuth()) return;
+        // === 將核心函數定義在全域作用域，解決 ReferenceError ===
+        // 這些函數需要在 HTML 中被 onclick 調用，所以必須定義在全域作用域
 
-            loadContracts();
+        /**
+         * 查看合約詳情
+         * (在 HTML 中被 onclick="viewContractDetails(contractId)" 呼叫)
+         */
+        function viewContractDetails(contractId) {
+            window.location.href = `/contract-details.html?id=${contractId}`;
+        }
 
+        /**
+         * 查看詳細資料
+         * (在 HTML 中被 onclick="viewDetails(contractId, type)" 呼叫)
+         */
+        function viewDetails(contractId, type) {
+            window.location.href = `/contract-details.html?id=${contractId}&view=${type}`;
+        }
+
+        /**
+         * 接受合約
+         * (在 HTML 中被 onclick="acceptContract(contractId)" 呼叫)
+         */
+        async function acceptContract(contractId) {
+            if (!confirm('確定要接受這個合約嗎？')) return;
+
+            try {
+                await contractAPI.acceptContract(contractId);
+                showNotification('合約已接受！', 'success');
+                loadContracts();
+            } catch (error) {
+                showNotification('操作失敗：' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 完成服務
+         * (在 HTML 中被 onclick="completeContract(contractId)" 呼叫)
+         */
+        async function completeContract(contractId) {
+            if (!confirm('確定要標記服務為已完成嗎？')) return;
+
+            try {
+                await contractAPI.completeContract(contractId);
+                showNotification('服務已標記為完成！', 'success');
+                loadContracts();
+            } catch (error) {
+                showNotification('操作失敗：' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 續約
+         * (在 HTML 中被 onclick="renewContract(contractId)" 呼叫)
+         */
+        async function renewContract(contractId) {
+            const endDate = prompt('請輸入續約結束日期 (YYYY-MM-DD):');
+            if (!endDate) return;
+
+            try {
+                await contractAPI.renewContract(contractId, endDate);
+                showNotification('續約已發起！', 'success');
+                loadContracts();
+            } catch (error) {
+                showNotification('續約失敗：' + error.message, 'error');
+            }
+        }
+
+        /**
+         * 顯示評價模態框
+         * (在 HTML 中被 onclick="showReviewModal(contractId, caregiverId)" 呼叫)
+         */
+        function showReviewModal(contractId, caregiverId) {
+            const rating = prompt('請輸入評分 (1-5):');
+            if (!rating || rating < 1 || rating > 5) {
+                showNotification('評分必須在 1-5 之間', 'error');
+                return;
+            }
+
+            const comment = prompt('請輸入評價留言（可選）:') || '';
+
+            createReview(contractId, caregiverId, parseInt(rating), comment);
+        }
+
+        /**
+         * 建立評價
+         * (被 showReviewModal 呼叫)
+         */
+        async function createReview(contractId, caregiverId, rating, comment) {
+            try {
+                await reviewAPI.createReview({
+                    contract_id: contractId,
+                    caregiver_id: caregiverId,
+                    rating: rating,
+                    comment: comment,
+                });
+                showNotification('評價已提交！', 'success');
+                loadContracts();
+            } catch (error) {
+                showNotification('提交評價失敗：' + error.message, 'error');
+            }
+        }
+
+        // === 輔助函數（不需要暴露到全域，但為了代碼組織放在這裡）===
+        /**
+         * 載入合約列表
+         * (只在頁面初始化時調用，不需要暴露到全域)
+         */
         async function loadContracts() {
             try {
                 const contracts = await contractAPI.getContracts();
@@ -53,6 +156,10 @@
             }
         }
 
+        /**
+         * 顯示合約列表
+         * (只在頁面初始化時調用，不需要暴露到全域)
+         */
         function displayContracts(contracts) {
             const contractsDiv = document.getElementById('contractsContent');
 
@@ -88,15 +195,35 @@
                                     ${contract.is_renewal ? '<span class="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded">續約</span>' : ''}
                                 </div>
                                 
-                                <div class="grid md:grid-cols-2 gap-4 text-gray-700">
+                                <div class="grid md:grid-cols-2 gap-4 text-gray-700 mb-4">
                                     <div>
                                         <p><span class="font-medium">開始日期：</span>${formatDate(contract.start_date)}</p>
                                         <p><span class="font-medium">結束日期：</span>${formatDate(contract.end_date)}</p>
                                     </div>
                                     <div>
-                                        <p><span class="font-medium">照護者 ID：</span>${contract.caregiver_id}</p>
-                                        <p><span class="font-medium">使用者 ID：</span>${contract.user_id}</p>
+                                        <p><span class="font-medium">合約期間：</span>${calculateDuration(contract.start_date, contract.end_date)} 天</p>
                                     </div>
+                                </div>
+                                
+                                <div class="border-t pt-4">
+                                    <div class="grid md:grid-cols-2 gap-6">
+                                        <div class="bg-blue-50 p-4 rounded-lg">
+                                            <h4 class="font-semibold text-blue-800 mb-2">照護者資訊</h4>
+                                            <p class="text-sm"><span class="font-medium">姓名：</span>${contract.caregiver?.nickname || contract.caregiver?.email || '未提供'}</p>
+                                            <p class="text-sm"><span class="font-medium">電子郵件：</span>${contract.caregiver?.email || '未提供'}</p>
+                                            ${contract.caregiver?.role === 'caregiver' ? `<button onclick="viewDetails(${contract.contract_id}, 'caregiver')" class="mt-2 text-sm text-blue-600 hover:text-blue-800 underline">查看詳細資料</button>` : ''}
+                                        </div>
+                                        <div class="bg-green-50 p-4 rounded-lg">
+                                            <h4 class="font-semibold text-green-800 mb-2">家屬資訊</h4>
+                                            <p class="text-sm"><span class="font-medium">姓名：</span>${contract.user?.nickname || contract.user?.email || '未提供'}</p>
+                                            <p class="text-sm"><span class="font-medium">電子郵件：</span>${contract.user?.email || '未提供'}</p>
+                                            <button onclick="viewDetails(${contract.contract_id}, 'user')" class="mt-2 text-sm text-green-600 hover:text-green-800 underline">查看詳細資料</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <button onclick="viewContractDetails(${contract.contract_id})" class="text-sm text-primary-600 hover:text-primary-800 underline">查看完整合約詳情</button>
                                 </div>
                             </div>
 
@@ -120,6 +247,10 @@
             }).join('');
         }
 
+        /**
+         * 檢查是否可以續約
+         * (在 displayContracts 中被調用)
+         */
         function canRenew(endDate) {
             const end = new Date(endDate);
             const now = new Date();
@@ -127,68 +258,26 @@
             return daysUntilEnd <= 30 && daysUntilEnd >= 0;
         }
 
-        async function acceptContract(contractId) {
-            if (!confirm('確定要接受這個合約嗎？')) return;
-
-            try {
-                await contractAPI.acceptContract(contractId);
-                showNotification('合約已接受！', 'success');
-                loadContracts();
-            } catch (error) {
-                showNotification('操作失敗：' + error.message, 'error');
-            }
+        /**
+         * 計算合約期間
+         * (在 displayContracts 中被調用)
+         */
+        function calculateDuration(startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
         }
 
-        async function completeContract(contractId) {
-            if (!confirm('確定要標記服務為已完成嗎？')) return;
+        // === IIFE: 頁面初始化邏輯 ===
+        // 使用 IIFE 包裹頁面初始化邏輯，解決 Illegal return statement 錯誤
+        // 只有初始化邏輯包在 IIFE 中，需要被 HTML 調用的函數都定義在全域
+        (function () {
+            if (!requireAuth()) return;
 
-            try {
-                await contractAPI.completeContract(contractId);
-                showNotification('服務已標記為完成！', 'success');
-                loadContracts();
-            } catch (error) {
-                showNotification('操作失敗：' + error.message, 'error');
-            }
-        }
-
-        async function renewContract(contractId) {
-            const endDate = prompt('請輸入續約結束日期 (YYYY-MM-DD):');
-            if (!endDate) return;
-
-            try {
-                await contractAPI.renewContract(contractId, endDate);
-                showNotification('續約已發起！', 'success');
-                loadContracts();
-            } catch (error) {
-                showNotification('續約失敗：' + error.message, 'error');
-            }
-        }
-
-        function showReviewModal(contractId, caregiverId) {
-            const rating = prompt('請輸入評分 (1-5):');
-            if (!rating || rating < 1 || rating > 5) {
-                showNotification('評分必須在 1-5 之間', 'error');
-                return;
-            }
-
-            const comment = prompt('請輸入評價留言（可選）:') || '';
-
-            createReview(contractId, caregiverId, parseInt(rating), comment);
-        }
-
-        async function createReview(contractId, caregiverId, rating, comment) {
-            try {
-                await reviewAPI.createReview({
-                    contract_id: contractId,
-                    caregiver_id: caregiverId,
-                    rating: rating,
-                    comment: comment,
-                });
-                showNotification('評價已提交！', 'success');
-            } catch (error) {
-                showNotification('提交評價失敗：' + error.message, 'error');
-            }
-        }
+            // 載入合約列表
+            loadContracts();
         })();
     </script>
 </body>

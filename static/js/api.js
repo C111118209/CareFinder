@@ -158,6 +158,17 @@ const caregiverAPI = {
       body: JSON.stringify({ availabilities }),
     });
   },
+
+  async getSpecialAvailability() {
+    return apiRequest('/caregivers/special-availability');
+  },
+
+  async updateSpecialAvailability(specialAvailabilities) {
+    return apiRequest('/caregivers/special-availability', {
+      method: 'PUT',
+      body: JSON.stringify({ special_availabilities: specialAvailabilities }),
+    });
+  },
 };
 
 // License API
@@ -295,6 +306,76 @@ function requireUserRole() {
   }
   return true;
 }
+
+// Check if user is admin, redirect if not
+function requireAdminRole() {
+  if (!requireAuth()) return false;
+  
+  const user = getUser();
+  if (!user || user.role !== 'admin') {
+    showNotification('只有管理員可以訪問此頁面', 'error');
+    setTimeout(() => {
+      window.location.href = '/dashboard.html';
+    }, 2000);
+    return false;
+  }
+  return true;
+}
+
+// Admin API
+const adminAPI = {
+  async getAllUsers() {
+    return apiRequest('/admin/users');
+  },
+
+  async toggleUserStatus(userId, isActive) {
+    return apiRequest(`/admin/users/${userId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_active: isActive }),
+    });
+  },
+
+  async getAllCaregivers() {
+    return apiRequest('/admin/caregivers');
+  },
+
+  async updateCaregiverStatus(profileId, isActive) {
+    return apiRequest(`/admin/caregivers/${profileId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ is_active: isActive }),
+    });
+  },
+
+  async getAllContracts() {
+    return apiRequest('/admin/contracts');
+  },
+
+  async updateContractStatus(contractId, status) {
+    return apiRequest(`/admin/contracts/${contractId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async getAllLicenses() {
+    return apiRequest('/admin/licenses');
+  },
+
+  async getPendingLicenses() {
+    return apiRequest('/admin/licenses/pending');
+  },
+
+  async reviewLicense(licenseId, status, note = '') {
+    return apiRequest(`/admin/licenses/${licenseId}/review`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, note }),
+    });
+  },
+
+  async getStatistics() {
+    return apiRequest('/admin/statistics');
+  },
+};
 
 // Format date
 function formatDate(dateString) {

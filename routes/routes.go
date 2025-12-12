@@ -25,8 +25,10 @@ func SetupRouter() *gin.Engine {
 	r.StaticFile("/caregiver-availability.html", "./static/caregiver-availability.html")
 	r.StaticFile("/caregiver-licenses.html", "./static/caregiver-licenses.html")
 	r.StaticFile("/contracts.html", "./static/contracts.html")
+	r.StaticFile("/contract-details.html", "./static/contract-details.html")
 	r.StaticFile("/create-contract.html", "./static/create-contract.html")
 	r.StaticFile("/profile.html", "./static/profile.html")
+	r.StaticFile("/admin-dashboard.html", "./static/admin-dashboard.html")
 
 	// Note: Uploads are now served through protected routes only
 	// r.Static("/uploads", "./uploads") - Removed for security
@@ -62,6 +64,8 @@ func SetupRouter() *gin.Engine {
 				caregivers.GET("/profile", controllers.GetMyProfile)
 				caregivers.GET("/availability", controllers.GetAvailability)
 				caregivers.PUT("/availability", controllers.UpdateAvailability)
+				caregivers.GET("/special-availability", controllers.GetSpecialAvailability)
+				caregivers.PUT("/special-availability", controllers.UpdateSpecialAvailability)
 				caregivers.GET("/search", controllers.SearchCaregivers)
 				caregivers.POST("/licenses", controllers.UploadLicense)
 				caregivers.GET("/licenses", controllers.GetMyLicenses)
@@ -85,6 +89,31 @@ func SetupRouter() *gin.Engine {
 			reviews := protected.Group("/reviews")
 			{
 				reviews.POST("", controllers.CreateReview)
+			}
+
+			// Admin routes (require admin role)
+			admin := protected.Group("/admin")
+			admin.Use(middleware.RequireAdmin())
+			{
+				// User management
+				admin.GET("/users", controllers.GetAllUsers)
+				admin.PUT("/users/:id/status", controllers.ToggleUserStatus)
+
+				// Caregiver management
+				admin.GET("/caregivers", controllers.GetAllCaregivers)
+				admin.PUT("/caregivers/:id/status", controllers.UpdateCaregiverStatus)
+
+				// Contract management
+				admin.GET("/contracts", controllers.GetAllContracts)
+				admin.PUT("/contracts/:id/status", controllers.UpdateContractStatus)
+
+				// License review
+				admin.GET("/licenses", controllers.GetAllLicenses)
+				admin.GET("/licenses/pending", controllers.GetPendingLicenses)
+				admin.PUT("/licenses/:id/review", controllers.ReviewLicense)
+
+				// Statistics
+				admin.GET("/statistics", controllers.GetStatistics)
 			}
 		}
 

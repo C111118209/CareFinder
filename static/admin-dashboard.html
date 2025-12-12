@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理員儀表板 - CareFinder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/static/css/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
+                    <div class="flex space-x-4">
+                        <button onclick="showSection('statistics')" class="nav-btn active">統計報告</button>
+                        <button onclick="showSection('users')" class="nav-btn">用戶管理</button>
+                        <button onclick="showSection('caregivers')" class="nav-btn">照護者管理</button>
+                        <button onclick="showSection('contracts')" class="nav-btn">合約管理</button>
+                        <button onclick="showSection('licenses')" class="nav-btn">證照審核</button>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userEmail" class="text-gray-700 text-sm"></span>
+                    <button onclick="authAPI.logout()" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Statistics Section -->
+        <div id="statistics" class="section">
+            <h2 class="text-3xl font-bold mb-6 text-gray-800">系統統計報告</h2>
+            <div id="statisticsContent" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                    <p class="mt-4 text-gray-600">載入中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Management Section -->
+        <div id="users" class="section hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">用戶管理</h2>
+                <button onclick="loadUsers()" class="btn-secondary">重新載入</button>
+            </div>
+            <div id="usersContent" class="card">
+                <div class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                    <p class="mt-4 text-gray-600">載入中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Caregivers Management Section -->
+        <div id="caregivers" class="section hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">照護者管理</h2>
+                <button onclick="loadCaregivers()" class="btn-secondary">重新載入</button>
+            </div>
+            <div id="caregiversContent" class="card">
+                <div class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                    <p class="mt-4 text-gray-600">載入中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contracts Management Section -->
+        <div id="contracts" class="section hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">合約管理</h2>
+                <button onclick="loadContracts()" class="btn-secondary">重新載入</button>
+            </div>
+            <div id="contractsContent" class="card">
+                <div class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                    <p class="mt-4 text-gray-600">載入中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Licenses Review Section -->
+        <div id="licenses" class="section hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold text-gray-800">證照審核</h2>
+                <div class="flex space-x-2">
+                    <button onclick="loadLicenses('all')" class="btn-secondary">所有證照</button>
+                    <button onclick="loadLicenses('pending')" class="btn-primary">待審核</button>
+                </div>
+            </div>
+            <div id="licensesContent" class="card">
+                <div class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                    <p class="mt-4 text-gray-600">載入中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        // Navigation
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-primary-600', 'text-white');
+                btn.classList.add('text-gray-700', 'hover:bg-gray-100');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.remove('hidden');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active', 'bg-primary-600', 'text-white');
+            event.target.classList.remove('text-gray-700', 'hover:bg-gray-100');
+            
+            // Load data for the section
+            switch(sectionName) {
+                case 'statistics':
+                    loadStatistics();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'caregivers':
+                    loadCaregivers();
+                    break;
+                case 'contracts':
+                    loadContracts();
+                    break;
+                case 'licenses':
+                    loadLicenses('pending');
+                    break;
+            }
+        }
+
+        // Statistics
+        async function loadStatistics() {
+            try {
+                const stats = await adminAPI.getStatistics();
+                displayStatistics(stats);
+            } catch (error) {
+                showNotification('載入統計資料失敗：' + error.message, 'error');
+            }
+        }
+
+        function displayStatistics(stats) {
+            const content = document.getElementById('statisticsContent');
+            content.innerHTML = `
+                <div class="card bg-blue-50">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-2">用戶統計</h3>
+                    <div class="text-3xl font-bold text-blue-600 mb-1">${stats.users.total}</div>
+                    <div class="text-sm text-gray-600">
+                        <p>啟用：${stats.users.active} | 停用：${stats.users.inactive}</p>
+                        <p class="mt-2">使用者：${stats.users.by_role.user || 0} | 照護者：${stats.users.by_role.caregiver || 0} | 管理員：${stats.users.by_role.admin || 0}</p>
+                    </div>
+                </div>
+                <div class="card bg-green-50">
+                    <h3 class="text-lg font-semibold text-green-800 mb-2">照護者統計</h3>
+                    <div class="text-3xl font-bold text-green-600 mb-1">${stats.caregivers.total}</div>
+                    <div class="text-sm text-gray-600">啟用：${stats.caregivers.active}</div>
+                </div>
+                <div class="card bg-purple-50">
+                    <h3 class="text-lg font-semibold text-purple-800 mb-2">合約統計</h3>
+                    <div class="text-3xl font-bold text-purple-600 mb-1">${stats.contracts.total}</div>
+                    <div class="text-sm text-gray-600">
+                        <p>待處理：${stats.contracts.pending} | 進行中：${stats.contracts.active}</p>
+                        <p>已完成：${stats.contracts.completed} | 已取消：${stats.contracts.canceled}</p>
+                    </div>
+                </div>
+                <div class="card bg-yellow-50">
+                    <h3 class="text-lg font-semibold text-yellow-800 mb-2">證照統計</h3>
+                    <div class="text-3xl font-bold text-yellow-600 mb-1">${stats.licenses.total}</div>
+                    <div class="text-sm text-gray-600">
+                        <p>待審核：${stats.licenses.pending} | 已通過：${stats.licenses.approved}</p>
+                        <p>已拒絕：${stats.licenses.rejected}</p>
+                    </div>
+                </div>
+                <div class="card bg-indigo-50">
+                    <h3 class="text-lg font-semibold text-indigo-800 mb-2">評價統計</h3>
+                    <div class="text-3xl font-bold text-indigo-600 mb-1">${stats.reviews.total}</div>
+                    <div class="text-sm text-gray-600">平均評分：${stats.reviews.avg_rating ? stats.reviews.avg_rating.toFixed(1) : '0.0'}</div>
+                </div>
+            `;
+        }
+
+        // Users Management
+        async function loadUsers() {
+            try {
+                const users = await adminAPI.getAllUsers();
+                displayUsers(users);
+            } catch (error) {
+                showNotification('載入用戶列表失敗：' + error.message, 'error');
+            }
+        }
+
+        function displayUsers(users) {
+            const content = document.getElementById('usersContent');
+            if (!users || users.length === 0) {
+                content.innerHTML = '<p class="text-center text-gray-600 py-8">目前沒有用戶</p>';
+                return;
+            }
+
+            content.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">電子郵件</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">暱稱</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">角色</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${users.map(user => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.user_id}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.email}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.nickname || '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <span class="px-2 py-1 text-xs rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : user.role === 'caregiver' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                                            ${user.role === 'admin' ? '管理員' : user.role === 'caregiver' ? '照護者' : '使用者'}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span class="px-2 py-1 text-xs rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            ${user.is_active ? '啟用' : '停用'}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        ${user.role !== 'admin' ? `
+                                            <button onclick="toggleUserStatus(${user.user_id}, ${!user.is_active})" 
+                                                class="btn-secondary text-sm ${user.is_active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}">
+                                                ${user.is_active ? '停用' : '啟用'}
+                                            </button>
+                                        ` : '<span class="text-gray-400">-</span>'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function toggleUserStatus(userId, isActive) {
+            if (!confirm(`確定要${isActive ? '啟用' : '停用'}此用戶嗎？`)) return;
+            
+            try {
+                await adminAPI.toggleUserStatus(userId, isActive);
+                showNotification('用戶狀態已更新', 'success');
+                loadUsers();
+            } catch (error) {
+                showNotification('更新失敗：' + error.message, 'error');
+            }
+        }
+
+        // Caregivers Management
+        async function loadCaregivers() {
+            try {
+                const caregivers = await adminAPI.getAllCaregivers();
+                displayCaregivers(caregivers);
+            } catch (error) {
+                showNotification('載入照護者列表失敗：' + error.message, 'error');
+            }
+        }
+
+        function displayCaregivers(caregivers) {
+            const content = document.getElementById('caregiversContent');
+            if (!caregivers || caregivers.length === 0) {
+                content.innerHTML = '<p class="text-center text-gray-600 py-8">目前沒有照護者</p>';
+                return;
+            }
+
+            content.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">姓名</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">電子郵件</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">電話</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">評分</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${caregivers.map(profile => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${profile.profile_id}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${profile.full_name}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${profile.user ? profile.user.email : '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${profile.phone || '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${profile.avg_rating ? profile.avg_rating.toFixed(1) : '0.0'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span class="px-2 py-1 text-xs rounded-full ${profile.user && profile.user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            ${profile.user && profile.user.is_active ? '啟用' : '停用'}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <button onclick="toggleCaregiverStatus(${profile.profile_id}, ${!(profile.user && profile.user.is_active)})" 
+                                            class="btn-secondary text-sm ${profile.user && profile.user.is_active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}">
+                                            ${profile.user && profile.user.is_active ? '停用' : '啟用'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function toggleCaregiverStatus(profileId, isActive) {
+            if (!confirm(`確定要${isActive ? '啟用' : '停用'}此照護者嗎？`)) return;
+            
+            try {
+                await adminAPI.updateCaregiverStatus(profileId, isActive);
+                showNotification('照護者狀態已更新', 'success');
+                loadCaregivers();
+            } catch (error) {
+                showNotification('更新失敗：' + error.message, 'error');
+            }
+        }
+
+        // Contracts Management
+        async function loadContracts() {
+            try {
+                const contracts = await adminAPI.getAllContracts();
+                displayContracts(contracts);
+            } catch (error) {
+                showNotification('載入合約列表失敗：' + error.message, 'error');
+            }
+        }
+
+        function displayContracts(contracts) {
+            const content = document.getElementById('contractsContent');
+            if (!contracts || contracts.length === 0) {
+                content.innerHTML = '<p class="text-center text-gray-600 py-8">目前沒有合約</p>';
+                return;
+            }
+
+            const statusText = {
+                'pending': '待處理',
+                'active': '進行中',
+                'completed': '已完成',
+                'canceled': '已取消'
+            };
+
+            const statusColors = {
+                'pending': 'bg-yellow-100 text-yellow-800',
+                'active': 'bg-green-100 text-green-800',
+                'completed': 'bg-blue-100 text-blue-800',
+                'canceled': 'bg-red-100 text-red-800'
+            };
+
+            content.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用者</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">照護者</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">開始日期</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">結束日期</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">狀態</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${contracts.map(contract => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${contract.contract_id}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${contract.user ? contract.user.email : '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${contract.caregiver ? contract.caregiver.email : '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(contract.start_date)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(contract.end_date)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span class="px-2 py-1 text-xs rounded-full ${statusColors[contract.status] || 'bg-gray-100 text-gray-800'}">
+                                            ${statusText[contract.status] || contract.status}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <select onchange="updateContractStatus(${contract.contract_id}, this.value)" 
+                                            class="text-sm border rounded px-2 py-1">
+                                            <option value="pending" ${contract.status === 'pending' ? 'selected' : ''}>待處理</option>
+                                            <option value="active" ${contract.status === 'active' ? 'selected' : ''}>進行中</option>
+                                            <option value="completed" ${contract.status === 'completed' ? 'selected' : ''}>已完成</option>
+                                            <option value="canceled" ${contract.status === 'canceled' ? 'selected' : ''}>已取消</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function updateContractStatus(contractId, status) {
+            try {
+                await adminAPI.updateContractStatus(contractId, status);
+                showNotification('合約狀態已更新', 'success');
+                loadContracts();
+            } catch (error) {
+                showNotification('更新失敗：' + error.message, 'error');
+            }
+        }
+
+        // Licenses Review
+        async function loadLicenses(type = 'pending') {
+            try {
+                const licenses = type === 'pending' 
+                    ? await adminAPI.getPendingLicenses()
+                    : await adminAPI.getAllLicenses();
+                displayLicenses(licenses, type);
+            } catch (error) {
+                showNotification('載入證照列表失敗：' + error.message, 'error');
+            }
+        }
+
+        function displayLicenses(licenses, type) {
+            const content = document.getElementById('licensesContent');
+            if (!licenses || licenses.length === 0) {
+                content.innerHTML = '<p class="text-center text-gray-600 py-8">目前沒有證照</p>';
+                return;
+            }
+
+            const statusText = {
+                'pending': '待審核',
+                'approved': '已通過',
+                'rejected': '已拒絕'
+            };
+
+            const statusColors = {
+                'pending': 'bg-yellow-100 text-yellow-800',
+                'approved': 'bg-green-100 text-green-800',
+                'rejected': 'bg-red-100 text-red-800'
+            };
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    ${licenses.map(license => {
+                        const profile = license.caregiver_profile || {};
+                        const user = profile.user || {};
+                        return `
+                            <div class="border rounded-lg p-4 bg-white">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-3 mb-2">
+                                            <h3 class="text-lg font-semibold text-gray-800">${license.name}</h3>
+                                            <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColors[license.status] || 'bg-gray-100 text-gray-800'}">
+                                                ${statusText[license.status] || license.status}
+                                            </span>
+                                        </div>
+                                        <div class="text-gray-600 space-y-1 text-sm">
+                                            <p><span class="font-medium">照護者：</span>${profile.full_name || '-'} (${user.email || '-'})</p>
+                                            <p><span class="font-medium">發證日期：</span>${formatDate(license.issue_date)}</p>
+                                            <p><span class="font-medium">有效期限：</span>${formatDate(license.expiry_date)}</p>
+                                            ${license.proof_url ? `<p><span class="font-medium">證明文件：</span><button onclick="viewLicenseImage('${license.proof_url}')" class="text-primary-600 hover:underline">查看</button></p>` : ''}
+                                        </div>
+                                    </div>
+                                    ${license.status === 'pending' ? `
+                                        <div class="flex space-x-2 ml-4">
+                                            <button onclick="reviewLicense(${license.license_id}, 'approved')" 
+                                                class="btn-primary bg-green-500 hover:bg-green-600 text-white">
+                                                通過
+                                            </button>
+                                            <button onclick="reviewLicense(${license.license_id}, 'rejected')" 
+                                                class="btn-secondary bg-red-500 hover:bg-red-600 text-white">
+                                                拒絕
+                                            </button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        async function reviewLicense(licenseId, status) {
+            const action = status === 'approved' ? '通過' : '拒絕';
+            if (!confirm(`確定要${action}此證照嗎？`)) return;
+            
+            try {
+                await adminAPI.reviewLicense(licenseId, status);
+                showNotification(`證照已${action}`, 'success');
+                loadLicenses('pending');
+            } catch (error) {
+                showNotification('審核失敗：' + error.message, 'error');
+            }
+        }
+
+        async function viewLicenseImage(proofUrl) {
+            if (!proofUrl) return;
+            
+            const token = getToken();
+            if (!token) {
+                showNotification('請先登入', 'error');
+                return;
+            }
+
+            try {
+                let imageUrl = proofUrl;
+                if (proofUrl.startsWith('/uploads/licenses/')) {
+                    const filename = proofUrl.replace('/uploads/licenses/', '');
+                    imageUrl = `http://localhost:8080/api/v1/caregivers/licenses/image/${filename}`;
+                } else if (!proofUrl.startsWith('http')) {
+                    if (proofUrl.startsWith('/api/v1/')) {
+                        imageUrl = `http://localhost:8080${proofUrl}`;
+                    } else {
+                        imageUrl = `http://localhost:8080/api/v1${proofUrl}`;
+                    }
+                }
+
+                const response = await fetch(imageUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('無法載入圖片');
+                }
+
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const newWindow = window.open();
+                if (newWindow) {
+                    newWindow.document.write(`
+                        <html>
+                            <head><title>證照圖片</title></head>
+                            <body style="margin:0;padding:20px;text-align:center;background:#f0f0f0;">
+                                <img src="${blobUrl}" style="max-width:100%;max-height:90vh;border:1px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,0.1);" />
+                            </body>
+                        </html>
+                    `);
+                }
+            } catch (error) {
+                showNotification('無法載入圖片：' + error.message, 'error');
+            }
+        }
+
+        // Initialize
+        (function () {
+            if (!requireAdminRole()) return;
+
+            const user = getUser();
+            if (user) {
+                document.getElementById('userEmail').textContent = user.email || '管理員';
+            }
+
+            // Load statistics by default
+            loadStatistics();
+        })();
+    </script>
+    <style>
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+        .nav-btn.active {
+            background-color: #2563eb;
+            color: white;
+        }
+    </style>
+</body>
+</html>
+

@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"carefinder/database"
+	"carefinder/models"
 	"carefinder/utils/token"
 	"net/http"
 	"strings"
@@ -51,6 +53,34 @@ func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 		// This will be checked in controllers
 		_ = userID
 		c.Set("required_roles", allowedRoles)
+		c.Next()
+	}
+}
+
+// RequireAdmin 檢查用戶是否為管理員
+func RequireAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+			c.Abort()
+			return
+		}
+
+		// Get user from database to check role
+		var user models.User
+		if err := database.DB.First(&user, userID).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+			c.Abort()
+			return
+		}
+
+		if user.Role != "admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

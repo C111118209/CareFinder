@@ -17,18 +17,19 @@ type User struct {
 }
 
 type CaregiverProfile struct {
-	ProfileID      uint           `gorm:"primaryKey" json:"profile_id"`
-	UserID         uint           `gorm:"not null" json:"user_id"`
-	User           User           `gorm:"foreignKey:UserID"`
-	FullName       string         `gorm:"varchar(100);not null" json:"full_name"`
-	Gender         string         `gorm:"varchar(10)" json:"gender"`
-	Phone          string         `gorm:"varchar(20)" json:"phone"`
-	Address        string         `gorm:"text" json:"address"`
-	Bio            string         `gorm:"text" json:"bio"`
-	AvgRating      float32        `gorm:"numeric(2,1);default:0.0" json:"avg_rating"`
-	ServiceRate    float64        `gorm:"decimal" json:"service_rate"`
-	Licenses       []License      `gorm:"foreignKey:CaregiverID" json:"licenses"`
-	Availabilities []Availability `gorm:"foreignKey:CaregiverID" json:"availabilities"`
+	ProfileID            uint                 `gorm:"primaryKey" json:"profile_id"`
+	UserID               uint                 `gorm:"not null" json:"user_id"`
+	User                 User                 `gorm:"foreignKey:UserID"`
+	FullName             string               `gorm:"varchar(100);not null" json:"full_name"`
+	Gender               string               `gorm:"varchar(10)" json:"gender"`
+	Phone                string               `gorm:"varchar(20)" json:"phone"`
+	Address              string               `gorm:"text" json:"address"`
+	Bio                  string               `gorm:"text" json:"bio"`
+	AvgRating            float32              `gorm:"numeric(2,1);default:0.0" json:"avg_rating"`
+	ServiceRate          float64              `gorm:"decimal" json:"service_rate"`
+	Licenses             []License            `gorm:"foreignKey:CaregiverID" json:"licenses"`
+	Availabilities       []Availability       `gorm:"foreignKey:CaregiverID" json:"availabilities"`
+	SpecialAvailabilities []SpecialAvailability `gorm:"foreignKey:CaregiverID" json:"special_availabilities"`
 }
 
 type License struct {
@@ -49,6 +50,15 @@ type Availability struct {
 	DayOfWeek      int    `gorm:"not null" json:"day_of_week"` // 1=Mon, 7=Sun
 	StartTime      string `gorm:"type:time" json:"start_time"`
 	EndTime        string `gorm:"type:time" json:"end_time"`
+}
+
+type SpecialAvailability struct {
+	SpecialAvailabilityID uint      `gorm:"primaryKey" json:"special_availability_id"`
+	CaregiverID           uint      `gorm:"not null" json:"-"` // Foreign key to CaregiverProfile
+	Date                  time.Time `gorm:"type:date;not null" json:"date"` // 特定日期
+	StartTime             string    `gorm:"type:time" json:"start_time"`
+	EndTime               string    `gorm:"type:time" json:"end_time"`
+	IsAvailable           bool      `gorm:"default:true" json:"is_available"` // true=有空, false=沒空
 }
 
 type Contract struct {

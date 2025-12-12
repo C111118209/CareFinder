@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合約詳情 - CareFinder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/static/css/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
+                    <div data-nav-menu class="flex space-x-4">
+                        <!-- Navigation will be populated by navigation.js -->
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/contracts.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">返回合約列表</a>
+                    <button onclick="authAPI.logout()" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h2 class="text-3xl font-bold mb-6 text-gray-800">合約詳情</h2>
+
+        <div id="contractDetailsContent" class="space-y-6">
+            <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <p class="mt-4 text-gray-600">載入中...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
+    <script>
+        (function () {
+            if (!requireAuth()) return;
+
+            // Get contract ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const contractId = urlParams.get('id');
+            const viewType = urlParams.get('view'); // 'caregiver' or 'user'
+
+            if (!contractId) {
+                showNotification('缺少合約 ID', 'error');
+                setTimeout(() => {
+                    window.location.href = '/contracts.html';
+                }, 2000);
+                return;
+            }
+
+            loadContractDetails(contractId, viewType);
+
+            async function loadContractDetails(contractId, viewType) {
+                try {
+                    const contract = await contractAPI.getContract(contractId);
+                    
+                    // Load additional details
+                    let caregiverProfile = null;
+                    let userDetails = null;
+
+                    // Load caregiver profile if exists
+                    // GetCaregiverProfile now supports both profile_id and user_id
+                    if (contract.caregiver_id) {
+                        try {
+                            caregiverProfile = await caregiverAPI.getProfile(contract.caregiver_id);
+                        } catch (error) {
+                            console.log('Caregiver profile not found or not accessible:', error);
+                        }
+                    }
+
+                    // Load user details
+                    if (contract.user_id) {
+                        try {
+                            userDetails = await userAPI.getUser(contract.user_id);
+                        } catch (error) {
+                            console.log('User details not accessible');
+                        }
+                    }
+
+                    displayContractDetails(contract, caregiverProfile, userDetails, viewType);
+                } catch (error) {
+                    showNotification('載入失敗：' + error.message, 'error');
+                    setTimeout(() => {
+                        window.location.href = '/contracts.html';
+                    }, 2000);
+                }
+            }
+
+            function displayContractDetails(contract, caregiverProfile, userDetails, viewType) {
+                const contentDiv = document.getElementById('contractDetailsContent');
+
+                const statusColors = {
+                    'pending': 'bg-yellow-100 text-yellow-800',
+                    'active': 'bg-green-100 text-green-800',
+                    'completed': 'bg-blue-100 text-blue-800',
+                    'canceled': 'bg-red-100 text-red-800',
+                };
+
+                const statusText = {
+                    'pending': '待接受',
+                    'active': '進行中',
+                    'completed': '已完成',
+                    'canceled': '已取消',
+                };
+
+                // Determine which section to show
+                const showCaregiver = !viewType || viewType === 'caregiver';
+                const showUser = !viewType || viewType === 'user';
+
+                let html = `
+                    <div class="card mb-6">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-2xl font-semibold mb-2">合約 #${contract.contract_id}</h3>
+                                <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColors[contract.status] || 'bg-gray-100 text-gray-800'}">
+                                    ${statusText[contract.status] || contract.status}
+                                </span>
+                                ${contract.is_renewal ? '<span class="ml-2 text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded">續約</span>' : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-4 text-gray-700 mb-4">
+                            <div>
+                                <p><span class="font-medium">開始日期：</span>${formatDate(contract.start_date)}</p>
+                                <p><span class="font-medium">結束日期：</span>${formatDate(contract.end_date)}</p>
+                            </div>
+                            <div>
+                                <p><span class="font-medium">合約期間：</span>${calculateDuration(contract.start_date, contract.end_date)} 天</p>
+                                <p><span class="font-medium">建立時間：</span>${formatDate(contract.created_at)}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Caregiver Details Section
+                if (showCaregiver) {
+                    const profile = caregiverProfile?.profile || caregiverProfile;
+                    html += `
+                        <div class="card">
+                            <h3 class="text-xl font-semibold mb-4 text-blue-800">照護者詳細資料</h3>
+                            <div class="space-y-4">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm text-gray-600 mb-1">基本資訊</p>
+                                        <p><span class="font-medium">姓名：</span>${contract.caregiver?.nickname || contract.caregiver?.email || '未提供'}</p>
+                                        <p><span class="font-medium">電子郵件：</span>${contract.caregiver?.email || '未提供'}</p>
+                                        ${contract.caregiver?.avatar_url ? `<img src="${contract.caregiver.avatar_url}" alt="頭像" class="w-20 h-20 rounded-full mt-2">` : ''}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600 mb-1">帳號狀態</p>
+                                        <p><span class="font-medium">角色：</span>照護者</p>
+                                        <p><span class="font-medium">狀態：</span>${contract.caregiver?.is_active ? '<span class="text-green-600">啟用</span>' : '<span class="text-red-600">停用</span>'}</p>
+                                    </div>
+                                </div>
+                    `;
+
+                    if (profile) {
+                        html += `
+                                <div class="border-t pt-4 mt-4">
+                                    <p class="text-sm text-gray-600 mb-2">專業資料</p>
+                                    <div class="grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <p><span class="font-medium">全名：</span>${profile.full_name || '未提供'}</p>
+                                            <p><span class="font-medium">性別：</span>${profile.gender || '未提供'}</p>
+                                            <p><span class="font-medium">電話：</span>${profile.phone || '未提供'}</p>
+                                        </div>
+                                        <div>
+                                            <p><span class="font-medium">服務費率：</span>NT$ ${profile.service_rate ? profile.service_rate.toLocaleString() : '未設定'}</p>
+                                            <p><span class="font-medium">平均評分：</span>${profile.avg_rating ? profile.avg_rating.toFixed(1) + ' / 5.0' : '尚無評分'}</p>
+                                        </div>
+                                    </div>
+                                    ${profile.address ? `<p class="mt-2"><span class="font-medium">地址：</span>${profile.address}</p>` : ''}
+                                    ${profile.bio ? `<div class="mt-4"><p class="font-medium mb-1">個人簡介：</p><p class="text-gray-700">${profile.bio}</p></div>` : ''}
+                                </div>
+                        `;
+
+                        if (profile.availabilities && profile.availabilities.length > 0) {
+                            html += `
+                                <div class="border-t pt-4 mt-4">
+                                    <p class="font-medium mb-2">可服務時間</p>
+                                    <div class="grid md:grid-cols-2 gap-2">
+                            `;
+                            const dayNames = ['', '週一', '週二', '週三', '週四', '週五', '週六', '週日'];
+                            profile.availabilities.forEach(avail => {
+                                html += `<p class="text-sm">${dayNames[avail.day_of_week]} ${avail.start_time} - ${avail.end_time}</p>`;
+                            });
+                            html += `</div></div>`;
+                        }
+
+                        if (profile.licenses && profile.licenses.length > 0) {
+                            html += `
+                                <div class="border-t pt-4 mt-4">
+                                    <p class="font-medium mb-2">證照資訊</p>
+                                    <div class="space-y-2">
+                            `;
+                            profile.licenses.forEach(license => {
+                                html += `
+                                    <div class="bg-gray-50 p-3 rounded">
+                                        <p class="text-sm"><span class="font-medium">${license.name}</span></p>
+                                        <p class="text-xs text-gray-600">發證日期：${formatDate(license.issue_date)} | 到期日期：${formatDate(license.expiry_date)}</p>
+                                        <span class="text-xs px-2 py-1 rounded ${license.status === 'approved' ? 'bg-green-100 text-green-800' : license.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">${license.status === 'approved' ? '已核准' : license.status === 'pending' ? '待審核' : '已拒絕'}</span>
+                                    </div>
+                                `;
+                            });
+                            html += `</div></div>`;
+                        }
+                    } else {
+                        html += `<p class="text-gray-600">照護者尚未建立完整資料</p>`;
+                    }
+
+                    html += `</div></div>`;
+                }
+
+                // User Details Section
+                if (showUser) {
+                    html += `
+                        <div class="card">
+                            <h3 class="text-xl font-semibold mb-4 text-green-800">家屬詳細資料</h3>
+                            <div class="space-y-4">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p class="text-sm text-gray-600 mb-1">基本資訊</p>
+                                        <p><span class="font-medium">姓名：</span>${userDetails?.nickname || contract.user?.nickname || contract.user?.email || '未提供'}</p>
+                                        <p><span class="font-medium">電子郵件：</span>${userDetails?.email || contract.user?.email || '未提供'}</p>
+                                        ${(userDetails?.avatar_url || contract.user?.avatar_url) ? `<img src="${userDetails?.avatar_url || contract.user?.avatar_url}" alt="頭像" class="w-20 h-20 rounded-full mt-2">` : ''}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-600 mb-1">帳號資訊</p>
+                                        <p><span class="font-medium">角色：</span>家屬</p>
+                                        <p><span class="font-medium">狀態：</span>${(userDetails?.is_active ?? contract.user?.is_active) ? '<span class="text-green-600">啟用</span>' : '<span class="text-red-600">停用</span>'}</p>
+                                        <p><span class="font-medium">註冊時間：</span>${userDetails?.created_at ? formatDate(userDetails.created_at) : contract.user?.created_at ? formatDate(contract.user.created_at) : '未提供'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Action buttons
+                html += `
+                    <div class="card">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold mb-2">合約操作</h3>
+                            </div>
+                            <div class="flex space-x-2">
+                                ${contract.status === 'pending' && getUser().role === 'caregiver' ? `
+                                    <button onclick="acceptContract(${contract.contract_id})" class="btn-primary">接受合約</button>
+                                ` : ''}
+                                ${contract.status === 'active' ? `
+                                    <button onclick="completeContract(${contract.contract_id})" class="btn-primary">完成服務</button>
+                                ` : ''}
+                                ${contract.status === 'completed' && getUser().role === 'user' ? `
+                                    <button onclick="showReviewModal(${contract.contract_id}, ${contract.caregiver_id})" class="btn-primary">評價</button>
+                                ` : ''}
+                                ${contract.status === 'active' && getUser().role === 'user' && canRenew(contract.end_date) ? `
+                                    <button onclick="renewContract(${contract.contract_id})" class="btn-secondary">續約</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                contentDiv.innerHTML = html;
+            }
+
+            function calculateDuration(startDate, endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays;
+            }
+
+            function canRenew(endDate) {
+                const end = new Date(endDate);
+                const now = new Date();
+                const daysUntilEnd = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+                return daysUntilEnd <= 30 && daysUntilEnd >= 0;
+            }
+
+            async function acceptContract(contractId) {
+                if (!confirm('確定要接受這個合約嗎？')) return;
+
+                try {
+                    await contractAPI.acceptContract(contractId);
+                    showNotification('合約已接受！', 'success');
+                    window.location.reload();
+                } catch (error) {
+                    showNotification('操作失敗：' + error.message, 'error');
+                }
+            }
+
+            async function completeContract(contractId) {
+                if (!confirm('確定要標記服務為已完成嗎？')) return;
+
+                try {
+                    await contractAPI.completeContract(contractId);
+                    showNotification('服務已標記為完成！', 'success');
+                    window.location.reload();
+                } catch (error) {
+                    showNotification('操作失敗：' + error.message, 'error');
+                }
+            }
+
+            async function renewContract(contractId) {
+                const endDate = prompt('請輸入續約結束日期 (YYYY-MM-DD):');
+                if (!endDate) return;
+
+                try {
+                    await contractAPI.renewContract(contractId, endDate);
+                    showNotification('續約已發起！', 'success');
+                    window.location.reload();
+                } catch (error) {
+                    showNotification('續約失敗：' + error.message, 'error');
+                }
+            }
+
+            function showReviewModal(contractId, caregiverId) {
+                const rating = prompt('請輸入評分 (1-5):');
+                if (!rating || rating < 1 || rating > 5) {
+                    showNotification('評分必須在 1-5 之間', 'error');
+                    return;
+                }
+
+                const comment = prompt('請輸入評價留言（可選）:') || '';
+
+                createReview(contractId, caregiverId, parseInt(rating), comment);
+            }
+
+            async function createReview(contractId, caregiverId, rating, comment) {
+                try {
+                    await reviewAPI.createReview({
+                        contract_id: contractId,
+                        caregiver_id: caregiverId,
+                        rating: rating,
+                        comment: comment,
+                    });
+                    showNotification('評價已提交！', 'success');
+                } catch (error) {
+                    showNotification('提交評價失敗：' + error.message, 'error');
+                }
+            }
+        })();
+    </script>
+</body>
+</html>
+

@@ -26,6 +26,7 @@ func Connect() {
 		&models.CaregiverProfile{},
 		&models.License{},
 		&models.Availability{},
+		&models.SpecialAvailability{},
 		&models.Contract{},
 		&models.Review{},
 	)

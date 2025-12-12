@@ -93,7 +93,10 @@
             }
 
             // Show appropriate dashboard based on role
-            if (user && user.role === 'caregiver') {
+            if (user && user.role === 'admin') {
+                // Redirect admin to admin dashboard
+                window.location.href = '/admin-dashboard.html';
+            } else if (user && user.role === 'caregiver') {
                 document.getElementById('caregiverDashboard').classList.remove('hidden');
             } else {
                 document.getElementById('userDashboard').classList.remove('hidden');

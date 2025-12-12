@@ -7,7 +7,17 @@ function setupNavigation() {
     const currentPath = window.location.pathname;
     
     navMenus.forEach(navMenu => {
-        if (user && user.role === 'caregiver') {
+        if (user && user.role === 'admin') {
+            // Admin navigation
+            const isDashboard = currentPath === '/dashboard.html' || currentPath === '/';
+            const isAdmin = currentPath === '/admin-dashboard.html';
+            const isUserProfile = currentPath === '/profile.html';
+            navMenu.innerHTML = `
+                <a href="/dashboard.html" class="${isDashboard ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-700 hover:text-primary-600'} px-3 py-2 rounded-md text-sm font-medium">儀表板</a>
+                <a href="/admin-dashboard.html" class="${isAdmin ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-700 hover:text-primary-600'} px-3 py-2 rounded-md text-sm font-medium">管理後台</a>
+                <a href="/profile.html" class="${isUserProfile ? 'text-primary-600 border-b-2 border-primary-600' : 'text-gray-700 hover:text-primary-600'} px-3 py-2 rounded-md text-sm font-medium">個人資訊</a>
+            `;
+        } else if (user && user.role === 'caregiver') {
             // Caregiver navigation
             const isDashboard = currentPath === '/dashboard.html' || currentPath === '/';
             const isProfile = currentPath === '/caregiver-profile-setup.html';

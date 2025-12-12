@@ -37,7 +37,8 @@
             <p class="text-gray-600 mb-4">請設定您每週可提供服務的時間段。使用者將根據這些時間來搜尋和發起合約。</p>
         </div>
 
-        <div class="card">
+        <div class="card mb-6">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">每週固定時間</h3>
             <form id="availabilityForm">
                 <div id="availabilityList" class="space-y-4">
                 </div>
@@ -60,6 +61,35 @@
                 </div>
             </form>
         </div>
+
+        <div class="card">
+            <h3 class="text-xl font-semibold mb-4 text-gray-800">特殊時段設定</h3>
+            <div class="mb-4">
+                <p class="text-gray-600 text-sm mb-2">設定特定日期的服務時間，優先權大於每週固定時間。</p>
+                <p class="text-gray-500 text-xs">例如：可以設定某個日期為「沒空」，即使該日期在週設定中是有空的。</p>
+            </div>
+            <form id="specialAvailabilityForm">
+                <div id="specialAvailabilityList" class="space-y-4">
+                </div>
+
+                <div class="mt-6">
+                    <button type="button" onclick="addSpecialAvailabilitySlot()" class="btn-secondary">
+                        + 新增特殊時段
+                    </button>
+                </div>
+
+                <div id="specialErrorMessage" class="text-red-600 text-sm mt-4 hidden"></div>
+
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" onclick="window.location.reload()" class="btn-secondary">
+                        取消
+                    </button>
+                    <button type="button" onclick="saveSpecialAvailability()" class="btn-primary">
+                        儲存特殊時段
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
 
@@ -71,6 +101,7 @@
         // === 將核心函數定義在全域作用域，解決 ReferenceError ===
         // 這些函數需要在 HTML 中被 onclick 調用，所以必須定義在全域作用域
         let availabilityCount = 0;
+        let specialAvailabilityCount = 0;
 
         /**
          * 新增時間段 slot
@@ -207,6 +238,135 @@
             }
         }
 
+        /**
+         * 新增特殊時段 slot
+         */
+        function addSpecialAvailabilitySlot(date = '', startTime = '', endTime = '', isAvailable = true) {
+            const list = document.getElementById('specialAvailabilityList');
+            const slot = document.createElement('div');
+            slot.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
+            slot.id = `special-slot-${specialAvailabilityCount}`;
+
+            // Format date for input (YYYY-MM-DD)
+            const dateValue = date ? (typeof date === 'string' ? date.split('T')[0] : date) : '';
+
+            slot.innerHTML = `
+        <div class="grid md:grid-cols-5 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">日期</label>
+            <input type="date" name="date" class="input-field" required value="${dateValue}">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
+            <input type="time" name="start_time" class="input-field" required value="${startTime}">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
+            <input type="time" name="end_time" class="input-field" required value="${endTime}">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">狀態</label>
+            <select name="is_available" class="input-field" required>
+              <option value="true" ${isAvailable ? 'selected' : ''}>有空</option>
+              <option value="false" ${!isAvailable ? 'selected' : ''}>沒空</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button type="button" onclick="removeSpecialSlot('special-slot-${specialAvailabilityCount}')" 
+              class="btn-secondary w-full bg-red-500 hover:bg-red-600 text-white">
+              刪除
+            </button>
+          </div>
+        </div>
+      `;
+
+            list.appendChild(slot);
+            specialAvailabilityCount++;
+        }
+
+        /**
+         * 刪除特殊時段 slot
+         */
+        function removeSpecialSlot(slotId) {
+            const slot = document.getElementById(slotId);
+            if (slot) {
+                slot.remove();
+            }
+        }
+
+        /**
+         * 儲存特殊時段
+         */
+        async function saveSpecialAvailability() {
+            const slots = document.querySelectorAll('[id^="special-slot-"]');
+            const specialAvailabilities = [];
+
+            for (const slot of slots) {
+                const date = slot.querySelector('[name="date"]').value;
+                const startTime = slot.querySelector('[name="start_time"]').value;
+                const endTime = slot.querySelector('[name="end_time"]').value;
+                const isAvailable = slot.querySelector('[name="is_available"]').value === 'true';
+
+                if (!date || !startTime || !endTime) {
+                    continue; // Skip incomplete slots
+                }
+
+                if (startTime >= endTime) {
+                    showNotification('開始時間必須早於結束時間', 'error');
+                    return;
+                }
+
+                specialAvailabilities.push({
+                    date: date,
+                    start_time: startTime,
+                    end_time: endTime,
+                    is_available: isAvailable,
+                });
+            }
+
+            const errorDiv = document.getElementById('specialErrorMessage');
+
+            try {
+                errorDiv.classList.add('hidden');
+                await caregiverAPI.updateSpecialAvailability(specialAvailabilities);
+                showNotification('特殊時段已更新！', 'success');
+                window.location.reload();
+            } catch (error) {
+                errorDiv.textContent = error.message || '儲存失敗，請稍後再試';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * 載入現有的特殊時段
+         */
+        async function loadSpecialAvailability() {
+            try {
+                const response = await caregiverAPI.getSpecialAvailability();
+                const specialAvailabilities = response.special_availabilities || [];
+
+                const list = document.getElementById('specialAvailabilityList');
+                list.innerHTML = ''; // 清空現有內容
+
+                if (specialAvailabilities.length > 0) {
+                    // 載入現有的特殊時段
+                    specialAvailabilities.forEach(avail => {
+                        const dateStr = avail.date ? (typeof avail.date === 'string' ? avail.date : avail.date.split('T')[0]) : '';
+                        addSpecialAvailabilitySlot(dateStr, avail.start_time, avail.end_time, avail.is_available);
+                    });
+                } else {
+                    // 如果沒有現有的特殊時段，添加一個空的 slot
+                    addSpecialAvailabilitySlot();
+                }
+            } catch (error) {
+                console.error('載入特殊時段失敗:', error);
+                // 即使載入失敗，也添加一個空的 slot
+                if (document.getElementById('specialAvailabilityList').children.length === 0) {
+                    addSpecialAvailabilitySlot();
+                }
+            }
+        }
+
         // === IIFE: 頁面初始化邏輯 ===
         // 使用 IIFE 包裹頁面初始化邏輯，解決 Illegal return statement 錯誤
         // 只有初始化邏輯包在 IIFE 中，需要被 HTML 調用的函數都定義在全域
@@ -215,6 +375,8 @@
 
             // 載入現有的 availability
             loadAvailability();
+            // 載入現有的特殊時段
+            loadSpecialAvailability();
         })();
     </script>
 </body>
