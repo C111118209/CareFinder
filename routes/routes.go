@@ -1,0 +1,80 @@
+package routes
+
+import (
+	"carefinder/controllers"
+	"carefinder/middleware"
+
+	"github.com/gin-gonic/gin"
+)
+
+func SetupRouter() *gin.Engine {
+	r := gin.Default()
+
+	// Serve static files
+	r.Static("/static", "./static")
+
+	// Serve HTML files
+	r.StaticFile("/", "./static/index.html")
+	r.StaticFile("/index.html", "./static/index.html")
+	r.StaticFile("/login.html", "./static/login.html")
+	r.StaticFile("/register.html", "./static/register.html")
+	r.StaticFile("/dashboard.html", "./static/dashboard.html")
+	r.StaticFile("/caregiver-search.html", "./static/caregiver-search.html")
+	r.StaticFile("/caregiver-profile.html", "./static/caregiver-profile.html")
+	r.StaticFile("/contracts.html", "./static/contracts.html")
+
+	// Group API routes
+	api := r.Group("/api/v1")
+	{
+		// Public routes
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", controllers.Register)
+			auth.POST("/login", controllers.Login)
+		}
+
+		// Protected routes (require authentication)
+		protected := api.Group("")
+		protected.Use(middleware.JwtAuthMiddleware())
+		{
+			// User management
+			users := protected.Group("/users")
+			{
+				users.GET("/:id", controllers.GetUser)
+				users.PUT("/:id", controllers.UpdateUser)
+			}
+
+			// Caregiver profile management
+			caregivers := protected.Group("/caregivers")
+			{
+				caregivers.POST("/profile", controllers.CreateCaregiverProfile)
+				caregivers.PUT("/profile", controllers.UpdateCaregiverProfile)
+				caregivers.PUT("/availability", controllers.UpdateAvailability)
+				caregivers.GET("/search", controllers.SearchCaregivers)
+			}
+
+			// Contract management
+			contracts := protected.Group("/contracts")
+			{
+				contracts.POST("", controllers.CreateContract)
+				contracts.GET("", controllers.GetContracts)
+				contracts.GET("/:id", controllers.GetContract)
+				contracts.PUT("/:id/accept", controllers.AcceptContract)
+				contracts.PUT("/:id/complete", controllers.CompleteContract)
+				contracts.POST("/:id/renew", controllers.RenewContract)
+			}
+
+			// Review management
+			reviews := protected.Group("/reviews")
+			{
+				reviews.POST("", controllers.CreateReview)
+			}
+		}
+
+		// Public caregiver profile and reviews (no auth required)
+		api.GET("/caregivers/:id", controllers.GetCaregiverProfile)
+		api.GET("/reviews/caregivers/:id", controllers.GetCaregiverReviews)
+	}
+
+	return r
+}
