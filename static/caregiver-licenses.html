@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,19 +8,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/static/css/output.css" rel="stylesheet">
 </head>
+
 <body class="bg-gray-50">
-    <!-- Navigation -->
     <nav class="bg-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-8">
                     <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
                     <div data-nav-menu class="flex space-x-4">
-                        <!-- Navigation will be populated by navigation.js -->
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button onclick="authAPI.logout()" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                    <button onclick="authAPI.logout()"
+                        class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
                 </div>
             </div>
         </div>
@@ -39,7 +40,6 @@
         </div>
     </div>
 
-    <!-- Upload Modal -->
     <div id="uploadModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3">
@@ -49,8 +49,8 @@
                         <label for="licenseName" class="block text-sm font-medium text-gray-700 mb-1">
                             證照名稱 <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="licenseName" name="name" required
-                            class="input-field" placeholder="例如：照顧服務員技術士證">
+                        <input type="text" id="licenseName" name="name" required class="input-field"
+                            placeholder="例如：照顧服務員技術士證">
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -73,8 +73,7 @@
                         <label for="proofFile" class="block text-sm font-medium text-gray-700 mb-1">
                             證照證明文件
                         </label>
-                        <input type="file" id="proofFile" name="proof" accept="image/*,.pdf"
-                            class="input-field">
+                        <input type="file" id="proofFile" name="proof" accept="image/*,.pdf" class="input-field">
                         <p class="text-xs text-gray-500 mt-1">支援圖片或PDF格式</p>
                     </div>
 
@@ -96,73 +95,102 @@
     <script src="/static/js/api.js"></script>
     <script src="/static/js/navigation.js"></script>
     <script>
-        (function () {
-            if (!requireAuth()) return;
+        // === 將核心互動函式定義在全域作用域，解決 ReferenceError ===
 
-            const user = getUser();
-            if (!user || user.role !== 'caregiver') {
-                showNotification('只有照護者可以訪問此頁面', 'error');
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 2000);
-                return;
-            }
-
-        loadLicenses();
-
+        /**
+         * 顯示上傳 Modal
+         * (在 HTML 中被 onclick="showUploadModal()" 呼叫)
+         */
         function showUploadModal() {
             document.getElementById('uploadModal').classList.remove('hidden');
             document.getElementById('uploadForm').reset();
         }
 
+        /**
+         * 隱藏上傳 Modal
+         * (在 HTML 中被 onclick="hideUploadModal()" 呼叫)
+         */
         function hideUploadModal() {
             document.getElementById('uploadModal').classList.add('hidden');
             document.getElementById('uploadErrorMessage').classList.add('hidden');
         }
 
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData();
-            formData.append('name', document.getElementById('licenseName').value);
-            formData.append('issue_date', document.getElementById('issueDate').value);
-            formData.append('expiry_date', document.getElementById('expiryDate').value);
-            
-            const fileInput = document.getElementById('proofFile');
-            if (fileInput.files.length > 0) {
-                formData.append('proof', fileInput.files[0]);
-            }
-
-            const errorDiv = document.getElementById('uploadErrorMessage');
-            const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+        /**
+         * 刪除證照
+         * (在 HTML 中被 onclick="deleteLicense(id)" 呼叫)
+         */
+        async function deleteLicense(licenseId) {
+            if (!confirm('確定要刪除此證照嗎？')) return;
 
             try {
-                errorDiv.classList.add('hidden');
-                submitBtn.disabled = true;
-                submitBtn.textContent = '上傳中...';
-
-                await licenseAPI.uploadLicense(formData);
-                showNotification('證照上傳成功！等待審核', 'success');
-                hideUploadModal();
+                await licenseAPI.deleteLicense(licenseId);
+                showNotification('證照已刪除', 'success');
                 loadLicenses();
             } catch (error) {
-                errorDiv.textContent = error.message || '上傳失敗，請稍後再試';
-                errorDiv.classList.remove('hidden');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '上傳';
-            }
-        });
-
-        async function loadLicenses() {
-            try {
-                const licenses = await licenseAPI.getMyLicenses();
-                displayLicenses(licenses);
-            } catch (error) {
-                showNotification('載入失敗：' + error.message, 'error');
+                showNotification('刪除失敗：' + error.message, 'error');
             }
         }
 
+        // 頁面初始化邏輯和輔助函式可以保留在 IIFE 或全域
+
+        /**
+         * 查看許可證圖片（帶認證）
+         */
+        async function viewLicenseImage(proofUrl) {
+            if (!proofUrl) return;
+            
+            const token = getToken();
+            if (!token) {
+                showNotification('請先登入', 'error');
+                return;
+            }
+
+            try {
+                // 如果是新的受保護路由，直接使用；如果是舊的 /uploads 路由，轉換為新路由
+                let imageUrl = proofUrl;
+                if (proofUrl.startsWith('/uploads/licenses/')) {
+                    const filename = proofUrl.replace('/uploads/licenses/', '');
+                    imageUrl = `${API_BASE_URL}/caregivers/licenses/image/${filename}`;
+                } else if (!proofUrl.startsWith('http')) {
+                    // 如果已經是相對路徑的 API 路由，加上 API_BASE_URL
+                    if (proofUrl.startsWith('/api/v1/')) {
+                        imageUrl = `http://localhost:8080${proofUrl}`;
+                    } else {
+                        imageUrl = `${API_BASE_URL}${proofUrl}`;
+                    }
+                }
+
+                // 使用 fetch 帶上 token 獲取圖片
+                const response = await fetch(imageUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('無法載入圖片');
+                }
+
+                // 將響應轉換為 blob 並在新窗口中顯示
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const newWindow = window.open();
+                if (newWindow) {
+                    newWindow.document.write(`
+                        <html>
+                            <head><title>證照圖片</title></head>
+                            <body style="margin:0;padding:20px;text-align:center;background:#f0f0f0;">
+                                <img src="${blobUrl}" style="max-width:100%;max-height:90vh;border:1px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,0.1);" />
+                            </body>
+                        </html>
+                    `);
+                }
+            } catch (error) {
+                showNotification('無法載入圖片：' + error.message, 'error');
+            }
+        }
+
+        // 輔助函式: 顯示證照列表
         function displayLicenses(licenses) {
             const listDiv = document.getElementById('licensesList');
 
@@ -201,7 +229,7 @@
                             <div class="text-gray-600 space-y-1">
                                 <p><span class="font-medium">發證日期：</span>${formatDate(license.issue_date)}</p>
                                 <p><span class="font-medium">有效期限：</span>${formatDate(license.expiry_date)}</p>
-                                ${license.proof_url ? `<p><span class="font-medium">證明文件：</span><a href="${license.proof_url}" target="_blank" class="text-primary-600 hover:underline">查看</a></p>` : ''}
+                                ${license.proof_url ? `<p><span class="font-medium">證明文件：</span><button onclick="viewLicenseImage('${license.proof_url}')" class="text-primary-600 hover:underline cursor-pointer">查看</button></p>` : ''}
                             </div>
                         </div>
                         ${license.status === 'pending' || license.status === 'rejected' ? `
@@ -215,19 +243,60 @@
             `).join('');
         }
 
-        async function deleteLicense(licenseId) {
-            if (!confirm('確定要刪除此證照嗎？')) return;
-
+        // 輔助函式: 載入證照列表
+        async function loadLicenses() {
             try {
-                await licenseAPI.deleteLicense(licenseId);
-                showNotification('證照已刪除', 'success');
-                loadLicenses();
+                const licenses = await licenseAPI.getMyLicenses();
+                displayLicenses(licenses);
             } catch (error) {
-                showNotification('刪除失敗：' + error.message, 'error');
+                showNotification('載入失敗：' + error.message, 'error');
             }
         }
+
+        // === IIFE: 頁面初始化和事件監聽 ===
+        (function () {
+            // 授權檢查和頁面初始化邏輯
+            if (!requireCaregiverRole()) return;
+
+            // 初始載入資料
+            loadLicenses();
+
+            // 上傳表單事件監聽 (不需要暴露到全域，因為它是通過 addEventListener 綁定的)
+            document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData();
+                formData.append('name', document.getElementById('licenseName').value);
+                formData.append('issue_date', document.getElementById('issueDate').value);
+                formData.append('expiry_date', document.getElementById('expiryDate').value);
+
+                const fileInput = document.getElementById('proofFile');
+                if (fileInput.files.length > 0) {
+                    formData.append('proof', fileInput.files[0]);
+                }
+
+                const errorDiv = document.getElementById('uploadErrorMessage');
+                const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+
+                try {
+                    errorDiv.classList.add('hidden');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '上傳中...';
+
+                    await licenseAPI.uploadLicense(formData);
+                    showNotification('證照上傳成功！等待審核', 'success');
+                    hideUploadModal();
+                    loadLicenses();
+                } catch (error) {
+                    errorDiv.textContent = error.message || '上傳失敗，請稍後再試';
+                    errorDiv.classList.remove('hidden');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '上傳';
+                }
+            });
         })();
     </script>
 </body>
-</html>
 
+</html>

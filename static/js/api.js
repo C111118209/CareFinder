@@ -93,6 +93,10 @@ const authAPI = {
 
 // User API
 const userAPI = {
+  async getCurrentUser() {
+    return apiRequest('/users/me');
+  },
+
   async getUser(id) {
     return apiRequest(`/users/${id}`);
   },
@@ -101,6 +105,16 @@ const userAPI = {
     return apiRequest(`/users/${id}`, {
       method: 'PUT',
       body: JSON.stringify(userData),
+    });
+  },
+
+  async updatePassword(id, oldPassword, newPassword) {
+    return apiRequest(`/users/${id}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        old_password: oldPassword,
+        new_password: newPassword,
+      }),
     });
   },
 };
@@ -121,6 +135,10 @@ const caregiverAPI = {
     });
   },
 
+  async getMyProfile() {
+    return apiRequest('/caregivers/profile');
+  },
+
   async getProfile(id) {
     return apiRequest(`/caregivers/${id}`);
   },
@@ -128,6 +146,10 @@ const caregiverAPI = {
   async search(filters = {}) {
     const params = new URLSearchParams(filters);
     return apiRequest(`/caregivers/search?${params}`);
+  },
+
+  async getAvailability() {
+    return apiRequest('/caregivers/availability');
   },
 
   async updateAvailability(availabilities) {
@@ -239,6 +261,36 @@ function isAuthenticated() {
 function requireAuth() {
   if (!isAuthenticated()) {
     window.location.href = '/login.html';
+    return false;
+  }
+  return true;
+}
+
+// Check if user is caregiver, redirect if not
+function requireCaregiverRole() {
+  if (!requireAuth()) return false;
+  
+  const user = getUser();
+  if (!user || user.role !== 'caregiver') {
+    showNotification('只有照護者可以訪問此頁面', 'error');
+    setTimeout(() => {
+      window.location.href = '/dashboard.html';
+    }, 2000);
+    return false;
+  }
+  return true;
+}
+
+// Check if user is regular user, redirect if not
+function requireUserRole() {
+  if (!requireAuth()) return false;
+  
+  const user = getUser();
+  if (!user || user.role !== 'user') {
+    showNotification('只有使用者可以訪問此頁面', 'error');
+    setTimeout(() => {
+      window.location.href = '/dashboard.html';
+    }, 2000);
     return false;
   }
   return true;

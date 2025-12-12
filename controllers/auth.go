@@ -95,9 +95,11 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"token": jwt,
 		"user": gin.H{
-			"id":    user.ID,
-			"email": user.Email,
-			"role":  user.Role,
+			"id":         user.ID,
+			"email":      user.Email,
+			"nickname":   user.Nickname,
+			"avatar_url": user.AvatarURL,
+			"role":       user.Role,
 		},
 	})
 }

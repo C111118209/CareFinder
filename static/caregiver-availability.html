@@ -51,7 +51,7 @@
                 <div id="errorMessage" class="text-red-600 text-sm mt-4 hidden"></div>
 
                 <div class="flex justify-end space-x-4 mt-6">
-                    <button type="button" onclick="window.location.href='/dashboard.html'" class="btn-secondary">
+                    <button type="button" onclick="window.location.reload()" class="btn-secondary">
                         取消
                     </button>
                     <button type="button" onclick="saveAvailability()" class="btn-primary">
@@ -68,10 +68,15 @@
     <script src="/static/js/navigation.js"></script>
 
     <script>
-        // 將核心函數定義在全域作用域，解決 ReferenceError
+        // === 將核心函數定義在全域作用域，解決 ReferenceError ===
+        // 這些函數需要在 HTML 中被 onclick 調用，所以必須定義在全域作用域
         let availabilityCount = 0;
 
-        function addAvailabilitySlot() {
+        /**
+         * 新增時間段 slot
+         * (在 HTML 中被 onclick="addAvailabilitySlot()" 呼叫)
+         */
+        function addAvailabilitySlot(dayOfWeek = '', startTime = '', endTime = '') {
             const list = document.getElementById('availabilityList');
             const slot = document.createElement('div');
             slot.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
@@ -83,22 +88,22 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">星期</label>
             <select name="day_of_week" class="input-field" required>
               <option value="">請選擇</option>
-              <option value="1">週一</option>
-              <option value="2">週二</option>
-              <option value="3">週三</option>
-              <option value="4">週四</option>
-              <option value="5">週五</option>
-              <option value="6">週六</option>
-              <option value="7">週日</option>
+              <option value="1" ${dayOfWeek === 1 ? 'selected' : ''}>週一</option>
+              <option value="2" ${dayOfWeek === 2 ? 'selected' : ''}>週二</option>
+              <option value="3" ${dayOfWeek === 3 ? 'selected' : ''}>週三</option>
+              <option value="4" ${dayOfWeek === 4 ? 'selected' : ''}>週四</option>
+              <option value="5" ${dayOfWeek === 5 ? 'selected' : ''}>週五</option>
+              <option value="6" ${dayOfWeek === 6 ? 'selected' : ''}>週六</option>
+              <option value="7" ${dayOfWeek === 7 ? 'selected' : ''}>週日</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
-            <input type="time" name="start_time" class="input-field" required>
+            <input type="time" name="start_time" class="input-field" required value="${startTime}">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
-            <input type="time" name="end_time" class="input-field" required>
+            <input type="time" name="end_time" class="input-field" required value="${endTime}">
           </div>
           <div class="flex items-end">
             <button type="button" onclick="removeSlot('slot-${availabilityCount}')" 
@@ -113,6 +118,10 @@
             availabilityCount++;
         }
 
+        /**
+         * 刪除時間段 slot
+         * (在動態生成的 HTML 中被 onclick="removeSlot('slot-xxx')" 呼叫)
+         */
         function removeSlot(slotId) {
             const slot = document.getElementById(slotId);
             if (slot) {
@@ -120,6 +129,10 @@
             }
         }
 
+        /**
+         * 儲存服務時間
+         * (在 HTML 中被 onclick="saveAvailability()" 呼叫)
+         */
         async function saveAvailability() {
             const slots = document.querySelectorAll('[id^="slot-"]');
             const availabilities = [];
@@ -156,32 +169,52 @@
                 errorDiv.classList.add('hidden');
                 await caregiverAPI.updateAvailability(availabilities);
                 showNotification('服務時間已更新！', 'success');
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 1500);
+                window.location.reload();
             } catch (error) {
                 errorDiv.textContent = error.message || '儲存失敗，請稍後再試';
                 errorDiv.classList.remove('hidden');
             }
         }
 
+        // === 輔助函數（不需要暴露到全域，但為了代碼組織放在這裡）===
+        /**
+         * 載入現有的 availability
+         * (只在頁面初始化時調用，不需要暴露到全域)
+         */
+        async function loadAvailability() {
+            try {
+                const response = await caregiverAPI.getAvailability();
+                const availabilities = response.availabilities || [];
+
+                const list = document.getElementById('availabilityList');
+                list.innerHTML = ''; // 清空現有內容
+
+                if (availabilities.length > 0) {
+                    // 載入現有的 availability
+                    availabilities.forEach(avail => {
+                        addAvailabilitySlot(avail.day_of_week, avail.start_time, avail.end_time);
+                    });
+                } else {
+                    // 如果沒有現有的 availability，添加一個空的 slot
+                    addAvailabilitySlot();
+                }
+            } catch (error) {
+                console.error('載入服務時間失敗:', error);
+                // 即使載入失敗，也添加一個空的 slot
+                if (document.getElementById('availabilityList').children.length === 0) {
+                    addAvailabilitySlot();
+                }
+            }
+        }
+
+        // === IIFE: 頁面初始化邏輯 ===
         // 使用 IIFE 包裹頁面初始化邏輯，解決 Illegal return statement 錯誤
+        // 只有初始化邏輯包在 IIFE 中，需要被 HTML 調用的函數都定義在全域
         (function () {
-            if (!requireAuth()) return;
+            if (!requireCaregiverRole()) return;
 
-            const user = getUser();
-            if (!user || user.role !== 'caregiver') {
-                showNotification('只有照護者可以訪問此頁面', 'error');
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 2000);
-                return;
-            }
-
-            // 確保只有在沒有任何 slot 時才新增初始 slot
-            if (document.getElementById('availabilityList').children.length === 0) {
-                addAvailabilitySlot();
-            }
+            // 載入現有的 availability
+            loadAvailability();
         })();
     </script>
 </body>

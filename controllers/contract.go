@@ -83,8 +83,8 @@ func CreateContract(c *gin.Context) {
 		CaregiverID: input.CaregiverID,
 		StartDate:   startDate,
 		EndDate:     endDate,
-		Status:       "pending",
-		IsRenewal:    false,
+		Status:      "pending",
+		IsRenewal:   false,
 	}
 
 	if err := database.DB.Create(&contract).Error; err != nil {
@@ -110,11 +110,12 @@ func GetContracts(c *gin.Context) {
 	}
 
 	var contracts []models.Contract
-	if currentUser.Role == "user" {
+	switch currentUser.Role {
+	case "user":
 		database.DB.Where("user_id = ?", userID).Preload("Caregiver").Preload("User").Find(&contracts)
-	} else if currentUser.Role == "caregiver" {
+	case "caregiver":
 		database.DB.Where("caregiver_id = ?", userID).Preload("User").Preload("Caregiver").Find(&contracts)
-	} else {
+	default:
 		c.JSON(http.StatusForbidden, gin.H{"error": "Invalid role"})
 		return
 	}
@@ -355,4 +356,3 @@ func RenewContract(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, renewalContract)
 }
-

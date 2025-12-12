@@ -26,9 +26,10 @@ func SetupRouter() *gin.Engine {
 	r.StaticFile("/caregiver-licenses.html", "./static/caregiver-licenses.html")
 	r.StaticFile("/contracts.html", "./static/contracts.html")
 	r.StaticFile("/create-contract.html", "./static/create-contract.html")
+	r.StaticFile("/profile.html", "./static/profile.html")
 
-	// Serve uploads
-	r.Static("/uploads", "./uploads")
+	// Note: Uploads are now served through protected routes only
+	// r.Static("/uploads", "./uploads") - Removed for security
 
 	// Group API routes
 	api := r.Group("/api/v1")
@@ -47,8 +48,10 @@ func SetupRouter() *gin.Engine {
 			// User management
 			users := protected.Group("/users")
 			{
+				users.GET("/me", controllers.GetCurrentUser)
 				users.GET("/:id", controllers.GetUser)
 				users.PUT("/:id", controllers.UpdateUser)
+				users.PUT("/:id/password", controllers.UpdatePassword)
 			}
 
 			// Caregiver profile management
@@ -56,11 +59,15 @@ func SetupRouter() *gin.Engine {
 			{
 				caregivers.POST("/profile", controllers.CreateCaregiverProfile)
 				caregivers.PUT("/profile", controllers.UpdateCaregiverProfile)
+				caregivers.GET("/profile", controllers.GetMyProfile)
+				caregivers.GET("/availability", controllers.GetAvailability)
 				caregivers.PUT("/availability", controllers.UpdateAvailability)
 				caregivers.GET("/search", controllers.SearchCaregivers)
 				caregivers.POST("/licenses", controllers.UploadLicense)
 				caregivers.GET("/licenses", controllers.GetMyLicenses)
 				caregivers.DELETE("/licenses/:id", controllers.DeleteLicense)
+				// Protected route for license images
+				caregivers.GET("/licenses/image/:filename", controllers.ServeLicenseImage)
 			}
 
 			// Contract management

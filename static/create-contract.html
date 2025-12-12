@@ -78,16 +78,7 @@
     <script src="/static/js/navigation.js"></script>
     <script>
         (function () {
-            if (!requireAuth()) return;
-
-            const user = getUser();
-            if (!user || user.role !== 'user') {
-                showNotification('只有使用者可以發起合約', 'error');
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 2000);
-                return;
-            }
+            if (!requireUserRole()) return;
 
         // Get caregiver ID from URL
         const urlParams = new URLSearchParams(window.location.search);

@@ -141,6 +141,44 @@ func UpdateCaregiverProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, profile)
 }
 
+func GetMyProfile(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Get current user to check role
+	var currentUser models.User
+	if err := database.DB.First(&currentUser, userID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	if currentUser.Role != "caregiver" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only caregivers can view their profile"})
+		return
+	}
+
+	var profile models.CaregiverProfile
+	if err := database.DB.Where("user_id = ?", userID).First(&profile).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Profile not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	// Load availabilities
+	database.DB.Where("caregiver_id = ?", profile.ProfileID).Find(&profile.Availabilities)
+
+	// Load licenses
+	database.DB.Where("caregiver_id = ?", profile.ProfileID).Find(&profile.Licenses)
+
+	c.JSON(http.StatusOK, profile)
+}
+
 func GetCaregiverProfile(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -270,6 +308,45 @@ func SearchCaregivers(c *gin.Context) {
 	})
 }
 
+func GetAvailability(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	// Get current user to check role
+	var currentUser models.User
+	if err := database.DB.First(&currentUser, userID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	if currentUser.Role != "caregiver" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only caregivers can view availability"})
+		return
+	}
+
+	var profile models.CaregiverProfile
+	if err := database.DB.Where("user_id = ?", userID).First(&profile).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// Profile doesn't exist yet, return empty array
+			c.JSON(http.StatusOK, gin.H{"availabilities": []models.Availability{}})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	var availabilities []models.Availability
+	if err := database.DB.Where("caregiver_id = ?", profile.ProfileID).Find(&availabilities).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"availabilities": availabilities})
+}
+
 func UpdateAvailability(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -291,7 +368,11 @@ func UpdateAvailability(c *gin.Context) {
 
 	var profile models.CaregiverProfile
 	if err := database.DB.Where("user_id = ?", userID).First(&profile).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Profile not found"})
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "請先建立照護者檔案後再設定服務時間"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}
 
