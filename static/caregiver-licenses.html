@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>證照管理 - CareFinder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/static/css/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
+                    <div data-nav-menu class="flex space-x-4">
+                        <!-- Navigation will be populated by navigation.js -->
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="authAPI.logout()" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-3xl font-bold text-gray-800">證照管理</h2>
+            <button onclick="showUploadModal()" class="btn-primary">+ 上傳證照</button>
+        </div>
+
+        <div id="licensesList" class="space-y-4">
+            <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                <p class="mt-4 text-gray-600">載入中...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="uploadModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">上傳新證照</h3>
+                <form id="uploadForm" class="space-y-4">
+                    <div>
+                        <label for="licenseName" class="block text-sm font-medium text-gray-700 mb-1">
+                            證照名稱 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="licenseName" name="name" required
+                            class="input-field" placeholder="例如：照顧服務員技術士證">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="issueDate" class="block text-sm font-medium text-gray-700 mb-1">
+                                發證日期 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="issueDate" name="issue_date" required class="input-field">
+                        </div>
+
+                        <div>
+                            <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-1">
+                                有效期限 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="expiryDate" name="expiry_date" required class="input-field">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="proofFile" class="block text-sm font-medium text-gray-700 mb-1">
+                            證照證明文件
+                        </label>
+                        <input type="file" id="proofFile" name="proof" accept="image/*,.pdf"
+                            class="input-field">
+                        <p class="text-xs text-gray-500 mt-1">支援圖片或PDF格式</p>
+                    </div>
+
+                    <div id="uploadErrorMessage" class="text-red-600 text-sm hidden"></div>
+
+                    <div class="flex justify-end space-x-4">
+                        <button type="button" onclick="hideUploadModal()" class="btn-secondary">
+                            取消
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            上傳
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
+    <script>
+        (function () {
+            if (!requireAuth()) return;
+
+            const user = getUser();
+            if (!user || user.role !== 'caregiver') {
+                showNotification('只有照護者可以訪問此頁面', 'error');
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 2000);
+                return;
+            }
+
+        loadLicenses();
+
+        function showUploadModal() {
+            document.getElementById('uploadModal').classList.remove('hidden');
+            document.getElementById('uploadForm').reset();
+        }
+
+        function hideUploadModal() {
+            document.getElementById('uploadModal').classList.add('hidden');
+            document.getElementById('uploadErrorMessage').classList.add('hidden');
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('name', document.getElementById('licenseName').value);
+            formData.append('issue_date', document.getElementById('issueDate').value);
+            formData.append('expiry_date', document.getElementById('expiryDate').value);
+            
+            const fileInput = document.getElementById('proofFile');
+            if (fileInput.files.length > 0) {
+                formData.append('proof', fileInput.files[0]);
+            }
+
+            const errorDiv = document.getElementById('uploadErrorMessage');
+            const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+
+            try {
+                errorDiv.classList.add('hidden');
+                submitBtn.disabled = true;
+                submitBtn.textContent = '上傳中...';
+
+                await licenseAPI.uploadLicense(formData);
+                showNotification('證照上傳成功！等待審核', 'success');
+                hideUploadModal();
+                loadLicenses();
+            } catch (error) {
+                errorDiv.textContent = error.message || '上傳失敗，請稍後再試';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '上傳';
+            }
+        });
+
+        async function loadLicenses() {
+            try {
+                const licenses = await licenseAPI.getMyLicenses();
+                displayLicenses(licenses);
+            } catch (error) {
+                showNotification('載入失敗：' + error.message, 'error');
+            }
+        }
+
+        function displayLicenses(licenses) {
+            const listDiv = document.getElementById('licensesList');
+
+            if (!licenses || licenses.length === 0) {
+                listDiv.innerHTML = `
+                    <div class="card text-center py-8">
+                        <p class="text-gray-600 mb-4">目前沒有證照</p>
+                        <button onclick="showUploadModal()" class="btn-primary">上傳第一張證照</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const statusColors = {
+                'pending': 'bg-yellow-100 text-yellow-800',
+                'approved': 'bg-green-100 text-green-800',
+                'rejected': 'bg-red-100 text-red-800',
+            };
+
+            const statusText = {
+                'pending': '審核中',
+                'approved': '已通過',
+                'rejected': '已拒絕',
+            };
+
+            listDiv.innerHTML = licenses.map(license => `
+                <div class="card">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-xl font-semibold text-gray-800">${license.name}</h3>
+                                <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColors[license.status] || 'bg-gray-100 text-gray-800'}">
+                                    ${statusText[license.status] || license.status}
+                                </span>
+                            </div>
+                            <div class="text-gray-600 space-y-1">
+                                <p><span class="font-medium">發證日期：</span>${formatDate(license.issue_date)}</p>
+                                <p><span class="font-medium">有效期限：</span>${formatDate(license.expiry_date)}</p>
+                                ${license.proof_url ? `<p><span class="font-medium">證明文件：</span><a href="${license.proof_url}" target="_blank" class="text-primary-600 hover:underline">查看</a></p>` : ''}
+                            </div>
+                        </div>
+                        ${license.status === 'pending' || license.status === 'rejected' ? `
+                            <button onclick="deleteLicense(${license.license_id})" 
+                                class="btn-secondary bg-red-500 hover:bg-red-600 text-white ml-4">
+                                刪除
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteLicense(licenseId) {
+            if (!confirm('確定要刪除此證照嗎？')) return;
+
+            try {
+                await licenseAPI.deleteLicense(licenseId);
+                showNotification('證照已刪除', 'success');
+                loadLicenses();
+            } catch (error) {
+                showNotification('刪除失敗：' + error.message, 'error');
+            }
+        }
+        })();
+    </script>
+</body>
+</html>
+

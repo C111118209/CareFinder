@@ -59,11 +59,15 @@
 
             try {
                 errorDiv.classList.add('hidden');
-                await authAPI.login(email, password);
+                const response = await authAPI.login(email, password);
                 
-                // Get user info (you might want to fetch this from API)
-                const user = { email, role: 'user' }; // This should come from API
-                setUser(user);
+                // Set user info from API response
+                if (response.user) {
+                    setUser(response.user);
+                } else {
+                    // Fallback if API doesn't return user info
+                    setUser({ email, role: 'user' });
+                }
                 
                 showNotification('登入成功！', 'success');
                 setTimeout(() => {

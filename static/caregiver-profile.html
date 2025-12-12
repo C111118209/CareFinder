@@ -14,10 +14,8 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-8">
                     <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
-                    <div class="flex space-x-4">
-                        <a href="/dashboard.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">儀表板</a>
-                        <a href="/caregiver-search.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">搜尋照護者</a>
-                        <a href="/contracts.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">我的合約</a>
+                    <div data-nav-menu class="flex space-x-4">
+                        <!-- Navigation will be populated by navigation.js -->
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -37,16 +35,18 @@
     </div>
 
     <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
     <script>
-        if (!requireAuth()) return;
+        (function () {
+            if (!requireAuth()) return;
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const profileId = urlParams.get('id');
+            const urlParams = new URLSearchParams(window.location.search);
+            const profileId = urlParams.get('id');
 
-        if (!profileId) {
-            window.location.href = '/caregiver-search.html';
-            return;
-        }
+            if (!profileId) {
+                window.location.href = '/caregiver-search.html';
+                return;
+            }
 
         loadProfile();
 
@@ -77,7 +77,7 @@
                                 <span>💰 NT$ ${profile.service_rate || '0'}/小時</span>
                             </div>
                         </div>
-                        <button onclick="createContract(${profile.user_id})" class="btn-primary">發起合約</button>
+                        <a href="/create-contract.html?caregiver_id=${profile.user_id}&profile_id=${profile.profile_id}" class="btn-primary inline-block">發起合約</a>
                     </div>
 
                     ${profile.bio ? `
@@ -163,27 +163,7 @@
             
             return stars;
         }
-
-        async function createContract(caregiverId) {
-            const startDate = prompt('請輸入合約開始日期 (YYYY-MM-DD):');
-            const endDate = prompt('請輸入合約結束日期 (YYYY-MM-DD):');
-            
-            if (!startDate || !endDate) return;
-
-            try {
-                await contractAPI.createContract({
-                    caregiver_id: caregiverId,
-                    start_date: startDate,
-                    end_date: endDate,
-                });
-                showNotification('合約已發起！', 'success');
-                setTimeout(() => {
-                    window.location.href = '/contracts.html';
-                }, 1000);
-            } catch (error) {
-                showNotification('發起合約失敗：' + error.message, 'error');
-            }
-        }
+        })();
     </script>
 </body>
 </html>

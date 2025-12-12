@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照護者檔案設定 - CareFinder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/static/css/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
+                    <div data-nav-menu class="flex space-x-4">
+                        <!-- Navigation will be populated by navigation.js -->
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="authAPI.logout()" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h2 class="text-3xl font-bold mb-6 text-gray-800">照護者檔案設定</h2>
+
+        <div class="card">
+            <form id="profileForm" class="space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">
+                            姓名 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="fullName" name="full_name" required
+                            class="input-field" placeholder="請輸入您的姓名">
+                    </div>
+
+                    <div>
+                        <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">性別</label>
+                        <select id="gender" name="gender" class="input-field">
+                            <option value="">請選擇</option>
+                            <option value="male">男性</option>
+                            <option value="female">女性</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
+                            聯絡電話 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="tel" id="phone" name="phone" required
+                            class="input-field" placeholder="0912345678">
+                    </div>
+
+                    <div>
+                        <label for="serviceRate" class="block text-sm font-medium text-gray-700 mb-1">
+                            服務時薪 (NT$) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" id="serviceRate" name="service_rate" required min="0" step="10"
+                            class="input-field" placeholder="500">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="address" class="block text-sm font-medium text-gray-700 mb-1">
+                        服務地點/居住地 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="address" name="address" required
+                        class="input-field" placeholder="例如：台北市信義區">
+                </div>
+
+                <div>
+                    <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">自我介紹</label>
+                    <textarea id="bio" name="bio" rows="5"
+                        class="input-field" placeholder="請介紹您的照護經驗、專長、服務理念等..."></textarea>
+                </div>
+
+                <div id="errorMessage" class="text-red-600 text-sm hidden"></div>
+
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="window.location.href='/dashboard.html'" class="btn-secondary">
+                        取消
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <span id="submitText">儲存</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
+    <script>
+        (function () {
+            if (!requireAuth()) return;
+
+            const user = getUser();
+            if (!user || user.role !== 'caregiver') {
+                showNotification('只有照護者可以訪問此頁面', 'error');
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 2000);
+                return;
+            }
+
+        // Check if profile exists and load it
+        loadExistingProfile();
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                full_name: document.getElementById('fullName').value,
+                gender: document.getElementById('gender').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                bio: document.getElementById('bio').value,
+                service_rate: parseFloat(document.getElementById('serviceRate').value),
+            };
+
+            const errorDiv = document.getElementById('errorMessage');
+            const submitBtn = document.querySelector('button[type="submit"]');
+            const submitText = document.getElementById('submitText');
+
+            try {
+                errorDiv.classList.add('hidden');
+                submitBtn.disabled = true;
+                submitText.textContent = '儲存中...';
+
+                // Try to get existing profile first
+                let existingProfile = null;
+                try {
+                    // We need to get user ID from token or API
+                    const userId = await getCurrentUserId();
+                    // Try to find profile by checking if it exists
+                    // For now, we'll try to create first, if it fails with conflict, we'll update
+                } catch (err) {
+                    // Profile doesn't exist, will create new one
+                }
+
+                try {
+                    await caregiverAPI.createProfile(formData);
+                    showNotification('檔案建立成功！', 'success');
+                } catch (error) {
+                    // If profile exists, try to update
+                    if (error.message.includes('already exists') || error.message.includes('409')) {
+                        await caregiverAPI.updateProfile(formData);
+                        showNotification('檔案更新成功！', 'success');
+                    } else {
+                        throw error;
+                    }
+                }
+
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1500);
+            } catch (error) {
+                errorDiv.textContent = error.message || '操作失敗，請稍後再試';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                submitText.textContent = '儲存';
+            }
+        });
+
+        async function loadExistingProfile() {
+            try {
+                // Get current user ID from token
+                const userId = await getCurrentUserId();
+                
+                // Try to get profile - we need to search for it
+                // Since we don't have a direct endpoint, we'll check if update works
+                // For now, we'll just show the form
+            } catch (error) {
+                // Profile doesn't exist yet, show empty form
+            }
+        }
+
+        async function getCurrentUserId() {
+            // Extract user ID from token
+            const token = getToken();
+            if (!token) return null;
+            
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                return payload.user_id;
+            } catch (error) {
+                return null;
+            }
+        }
+        })();
+    </script>
+</body>
+</html>
+

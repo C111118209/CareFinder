@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服務時間設定 - CareFinder</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="/static/css/output.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
+                    <div data-nav-menu class="flex space-x-4">
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="authAPI.logout()"
+                        class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h2 class="text-3xl font-bold mb-6 text-gray-800">可服務時間設定</h2>
+
+        <div class="card mb-6">
+            <p class="text-gray-600 mb-4">請設定您每週可提供服務的時間段。使用者將根據這些時間來搜尋和發起合約。</p>
+        </div>
+
+        <div class="card">
+            <form id="availabilityForm">
+                <div id="availabilityList" class="space-y-4">
+                </div>
+
+                <div class="mt-6">
+                    <button type="button" onclick="addAvailabilitySlot()" class="btn-secondary">
+                        + 新增時間段
+                    </button>
+                </div>
+
+                <div id="errorMessage" class="text-red-600 text-sm mt-4 hidden"></div>
+
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" onclick="window.location.href='/dashboard.html'" class="btn-secondary">
+                        取消
+                    </button>
+                    <button type="button" onclick="saveAvailability()" class="btn-primary">
+                        儲存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script src="/static/js/api.js"></script>
+
+    <script src="/static/js/navigation.js"></script>
+
+    <script>
+        // 將核心函數定義在全域作用域，解決 ReferenceError
+        let availabilityCount = 0;
+
+        function addAvailabilitySlot() {
+            const list = document.getElementById('availabilityList');
+            const slot = document.createElement('div');
+            slot.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
+            slot.id = `slot-${availabilityCount}`;
+
+            slot.innerHTML = `
+        <div class="grid md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">星期</label>
+            <select name="day_of_week" class="input-field" required>
+              <option value="">請選擇</option>
+              <option value="1">週一</option>
+              <option value="2">週二</option>
+              <option value="3">週三</option>
+              <option value="4">週四</option>
+              <option value="5">週五</option>
+              <option value="6">週六</option>
+              <option value="7">週日</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">開始時間</label>
+            <input type="time" name="start_time" class="input-field" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">結束時間</label>
+            <input type="time" name="end_time" class="input-field" required>
+          </div>
+          <div class="flex items-end">
+            <button type="button" onclick="removeSlot('slot-${availabilityCount}')" 
+              class="btn-secondary w-full bg-red-500 hover:bg-red-600 text-white">
+              刪除
+            </button>
+          </div>
+        </div>
+      `;
+
+            list.appendChild(slot);
+            availabilityCount++;
+        }
+
+        function removeSlot(slotId) {
+            const slot = document.getElementById(slotId);
+            if (slot) {
+                slot.remove();
+            }
+        }
+
+        async function saveAvailability() {
+            const slots = document.querySelectorAll('[id^="slot-"]');
+            const availabilities = [];
+
+            for (const slot of slots) {
+                const dayOfWeek = slot.querySelector('[name="day_of_week"]').value;
+                const startTime = slot.querySelector('[name="start_time"]').value;
+                const endTime = slot.querySelector('[name="end_time"]').value;
+
+                if (!dayOfWeek || !startTime || !endTime) {
+                    continue; // Skip incomplete slots
+                }
+
+                if (startTime >= endTime) {
+                    showNotification('開始時間必須早於結束時間', 'error');
+                    return;
+                }
+
+                availabilities.push({
+                    day_of_week: parseInt(dayOfWeek),
+                    start_time: startTime,
+                    end_time: endTime,
+                });
+            }
+
+            if (availabilities.length === 0) {
+                showNotification('請至少設定一個時間段', 'error');
+                return;
+            }
+
+            const errorDiv = document.getElementById('errorMessage');
+
+            try {
+                errorDiv.classList.add('hidden');
+                await caregiverAPI.updateAvailability(availabilities);
+                showNotification('服務時間已更新！', 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1500);
+            } catch (error) {
+                errorDiv.textContent = error.message || '儲存失敗，請稍後再試';
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        // 使用 IIFE 包裹頁面初始化邏輯，解決 Illegal return statement 錯誤
+        (function () {
+            if (!requireAuth()) return;
+
+            const user = getUser();
+            if (!user || user.role !== 'caregiver') {
+                showNotification('只有照護者可以訪問此頁面', 'error');
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 2000);
+                return;
+            }
+
+            // 確保只有在沒有任何 slot 時才新增初始 slot
+            if (document.getElementById('availabilityList').children.length === 0) {
+                addAvailabilitySlot();
+            }
+        })();
+    </script>
+</body>
+
+</html>

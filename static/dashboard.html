@@ -14,10 +14,8 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-8">
                     <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
-                    <div class="flex space-x-4">
-                        <a href="/dashboard.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">儀表板</a>
-                        <a href="/caregiver-search.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">搜尋照護者</a>
-                        <a href="/contracts.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">我的合約</a>
+                    <div data-nav-menu class="flex space-x-4">
+                        <!-- Navigation will be populated by navigation.js -->
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -54,7 +52,19 @@
                 <div class="card">
                     <h3 class="text-xl font-semibold mb-4">我的檔案</h3>
                     <p class="text-gray-600 mb-4">管理您的照護者檔案和可服務時間</p>
-                    <button onclick="loadCaregiverProfile()" class="btn-primary">管理檔案</button>
+                    <a href="/caregiver-profile-setup.html" class="btn-primary inline-block">管理檔案</a>
+                </div>
+                
+                <div class="card">
+                    <h3 class="text-xl font-semibold mb-4">服務時間</h3>
+                    <p class="text-gray-600 mb-4">設定您的可服務時間段</p>
+                    <a href="/caregiver-availability.html" class="btn-primary inline-block">設定時間</a>
+                </div>
+                
+                <div class="card">
+                    <h3 class="text-xl font-semibold mb-4">證照管理</h3>
+                    <p class="text-gray-600 mb-4">上傳和管理您的證照</p>
+                    <a href="/caregiver-licenses.html" class="btn-primary inline-block">管理證照</a>
                 </div>
                 
                 <div class="card">
@@ -72,30 +82,33 @@
     </div>
 
     <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
     <script>
-        if (!requireAuth()) return;
+        (function () {
+            if (!requireAuth()) return;
 
-        const user = getUser();
-        if (user) {
-            document.getElementById('userEmail').textContent = user.email || '使用者';
-        }
-
-        // Show appropriate dashboard based on role
-        if (user && user.role === 'caregiver') {
-            document.getElementById('caregiverDashboard').classList.remove('hidden');
-        } else {
-            document.getElementById('userDashboard').classList.remove('hidden');
-        }
-
-        async function loadCaregiverProfile() {
-            try {
-                // This would need to get the caregiver profile ID from user
-                // For now, we'll just show a message
-                showNotification('請先建立照護者檔案', 'info');
-            } catch (error) {
-                showNotification('載入失敗', 'error');
+            const user = getUser();
+            if (user) {
+                document.getElementById('userEmail').textContent = user.email || '使用者';
             }
-        }
+
+            // Show appropriate dashboard based on role
+            if (user && user.role === 'caregiver') {
+                document.getElementById('caregiverDashboard').classList.remove('hidden');
+            } else {
+                document.getElementById('userDashboard').classList.remove('hidden');
+            }
+
+            async function loadCaregiverProfile() {
+                try {
+                    // This would need to get the caregiver profile ID from user
+                    // For now, we'll just show a message
+                    showNotification('請先建立照護者檔案', 'info');
+                } catch (error) {
+                    showNotification('載入失敗', 'error');
+                }
+            }
+        })();
     </script>
 </body>
 </html>

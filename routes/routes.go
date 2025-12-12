@@ -21,7 +21,14 @@ func SetupRouter() *gin.Engine {
 	r.StaticFile("/dashboard.html", "./static/dashboard.html")
 	r.StaticFile("/caregiver-search.html", "./static/caregiver-search.html")
 	r.StaticFile("/caregiver-profile.html", "./static/caregiver-profile.html")
+	r.StaticFile("/caregiver-profile-setup.html", "./static/caregiver-profile-setup.html")
+	r.StaticFile("/caregiver-availability.html", "./static/caregiver-availability.html")
+	r.StaticFile("/caregiver-licenses.html", "./static/caregiver-licenses.html")
 	r.StaticFile("/contracts.html", "./static/contracts.html")
+	r.StaticFile("/create-contract.html", "./static/create-contract.html")
+
+	// Serve uploads
+	r.Static("/uploads", "./uploads")
 
 	// Group API routes
 	api := r.Group("/api/v1")
@@ -51,6 +58,9 @@ func SetupRouter() *gin.Engine {
 				caregivers.PUT("/profile", controllers.UpdateCaregiverProfile)
 				caregivers.PUT("/availability", controllers.UpdateAvailability)
 				caregivers.GET("/search", controllers.SearchCaregivers)
+				caregivers.POST("/licenses", controllers.UploadLicense)
+				caregivers.GET("/licenses", controllers.GetMyLicenses)
+				caregivers.DELETE("/licenses/:id", controllers.DeleteLicense)
 			}
 
 			// Contract management

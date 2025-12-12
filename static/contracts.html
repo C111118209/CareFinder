@@ -14,10 +14,8 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-8">
                     <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
-                    <div class="flex space-x-4">
-                        <a href="/dashboard.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">儀表板</a>
-                        <a href="/caregiver-search.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">搜尋照護者</a>
-                        <a href="/contracts.html" class="text-primary-600 px-3 py-2 rounded-md text-sm font-medium border-b-2 border-primary-600">我的合約</a>
+                    <div data-nav-menu class="flex space-x-4">
+                        <!-- Navigation will be populated by navigation.js -->
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -39,10 +37,12 @@
     </div>
 
     <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
     <script>
-        if (!requireAuth()) return;
+        (function () {
+            if (!requireAuth()) return;
 
-        loadContracts();
+            loadContracts();
 
         async function loadContracts() {
             try {
@@ -189,6 +189,7 @@
                 showNotification('提交評價失敗：' + error.message, 'error');
             }
         }
+        })();
     </script>
 </body>
 </html>

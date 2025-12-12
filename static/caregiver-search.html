@@ -14,10 +14,8 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-8">
                     <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
-                    <div class="flex space-x-4">
-                        <a href="/dashboard.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">儀表板</a>
-                        <a href="/caregiver-search.html" class="text-primary-600 px-3 py-2 rounded-md text-sm font-medium border-b-2 border-primary-600">搜尋照護者</a>
-                        <a href="/contracts.html" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">我的合約</a>
+                    <div data-nav-menu class="flex space-x-4">
+                        <!-- Navigation will be populated by navigation.js -->
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -75,13 +73,15 @@
     </div>
 
     <script src="/static/js/api.js"></script>
+    <script src="/static/js/navigation.js"></script>
     <script>
-        if (!requireAuth()) return;
+        (function () {
+            if (!requireAuth()) return;
 
-        const user = getUser();
-        if (user) {
-            document.getElementById('userEmail').textContent = user.email || '使用者';
-        }
+            const user = getUser();
+            if (user) {
+                document.getElementById('userEmail').textContent = user.email || '使用者';
+            }
 
         document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -132,7 +132,8 @@
                             ${profile.bio ? `<p class="mt-3 text-gray-700 line-clamp-2">${profile.bio}</p>` : ''}
                         </div>
                         <div class="ml-4">
-                            <button class="btn-primary" onclick="event.stopPropagation(); createContract(${profile.user_id})">發起合約</button>
+                            <a href="/create-contract.html?caregiver_id=${profile.user_id}&profile_id=${profile.profile_id}" 
+                               class="btn-primary inline-block" onclick="event.stopPropagation();">發起合約</a>
                         </div>
                     </div>
                 </div>
@@ -161,31 +162,12 @@
             window.location.href = `/caregiver-profile.html?id=${profileId}`;
         }
 
-        async function createContract(caregiverId) {
-            const startDate = prompt('請輸入合約開始日期 (YYYY-MM-DD):');
-            const endDate = prompt('請輸入合約結束日期 (YYYY-MM-DD):');
-            
-            if (!startDate || !endDate) return;
-
-            try {
-                await contractAPI.createContract({
-                    caregiver_id: caregiverId,
-                    start_date: startDate,
-                    end_date: endDate,
-                });
-                showNotification('合約已發起！', 'success');
-                setTimeout(() => {
-                    window.location.href = '/contracts.html';
-                }, 1000);
-            } catch (error) {
-                showNotification('發起合約失敗：' + error.message, 'error');
-            }
-        }
 
         function resetSearch() {
             document.getElementById('searchForm').reset();
             document.getElementById('searchResults').innerHTML = '<p class="text-gray-600 text-center py-8">請輸入搜尋條件開始搜尋</p>';
         }
+        })();
     </script>
 </body>
 </html>

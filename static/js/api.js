@@ -80,6 +80,7 @@ const authAPI = {
     if (data.token) {
       setToken(data.token);
     }
+    // Return full response including user info
     return data;
   },
 
@@ -133,6 +134,47 @@ const caregiverAPI = {
     return apiRequest('/caregivers/availability', {
       method: 'PUT',
       body: JSON.stringify({ availabilities }),
+    });
+  },
+};
+
+// License API
+const licenseAPI = {
+  async uploadLicense(formData) {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/caregivers/licenses`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('License API Error:', error);
+      throw error;
+    }
+  },
+
+  async getMyLicenses() {
+    return apiRequest('/caregivers/licenses');
+  },
+
+  async deleteLicense(id) {
+    return apiRequest(`/caregivers/licenses/${id}`, {
+      method: 'DELETE',
     });
   },
 };
