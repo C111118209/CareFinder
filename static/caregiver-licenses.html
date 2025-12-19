@@ -9,85 +9,121 @@
     <link href="/static/css/output.css" rel="stylesheet">
 </head>
 
-<body class="bg-gray-50">
-    <nav class="bg-white shadow-md">
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-8">
-                    <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
-                    <div data-nav-menu class="flex space-x-4">
-                    </div>
+                    <a href="/dashboard.html" class="flex items-center gap-2 text-2xl font-bold text-primary-600">
+                        CareFinder
+                    </a>
+                    <div data-nav-menu class="hidden md:flex space-x-4"></div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <button onclick="authAPI.logout()"
-                        class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                        class="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        <i class="fa-solid fa-right-from-bracket mr-1"></i> 登出
+                    </button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-3xl font-bold text-gray-800">證照管理</h2>
-            <button onclick="showUploadModal()" class="btn-primary">+ 上傳證照</button>
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900">專業證照管理</h2>
+                <p class="text-gray-500 mt-1">上傳並管理您的專業資格證明，提升案主信任度。</p>
+            </div>
+            <button onclick="showUploadModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 font-medium">
+                <i class="fa-solid fa-plus"></i> 上傳新證照
+            </button>
         </div>
 
         <div id="licensesList" class="space-y-4">
-            <div class="text-center">
-                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-                <p class="mt-4 text-gray-600">載入中...</p>
+            <div class="bg-white rounded-xl p-10 text-center shadow-sm border border-gray-100">
+                <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-blue-600"></div>
+                <p class="mt-4 text-gray-500 font-medium">資料載入中...</p>
             </div>
         </div>
     </div>
 
-    <div id="uploadModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">上傳新證照</h3>
-                <form id="uploadForm" class="space-y-4">
-                    <div>
-                        <label for="licenseName" class="block text-sm font-medium text-gray-700 mb-1">
-                            證照名稱 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" id="licenseName" name="name" required class="input-field"
-                            placeholder="例如：照顧服務員技術士證">
-                    </div>
+    <div id="uploadModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 transition-opacity modal-backdrop" onclick="hideUploadModal()"></div>
 
-                    <div class="grid grid-cols-2 gap-4">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold leading-6 text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-file-circle-plus text-blue-600"></i> 上傳證照
+                    </h3>
+                    <button onclick="hideUploadModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="px-4 py-5 sm:p-6">
+                    <form id="uploadForm" class="space-y-5">
                         <div>
-                            <label for="issueDate" class="block text-sm font-medium text-gray-700 mb-1">
-                                發證日期 <span class="text-red-500">*</span>
+                            <label for="licenseName" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                證照名稱 <span class="text-red-500">*</span>
                             </label>
-                            <input type="date" id="issueDate" name="issue_date" required class="input-field">
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 text-gray-400"><i class="fa-solid fa-id-card"></i></span>
+                                <input type="text" id="licenseName" name="name" required class="input-field pl-10"
+                                    placeholder="例如：照顧服務員技術士證">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="issueDate" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                    發證日期 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" id="issueDate" name="issue_date" required class="input-field text-gray-600">
+                            </div>
+
+                            <div>
+                                <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                    有效期限 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" id="expiryDate" name="expiry_date" required class="input-field text-gray-600">
+                            </div>
                         </div>
 
                         <div>
-                            <label for="expiryDate" class="block text-sm font-medium text-gray-700 mb-1">
-                                有效期限 <span class="text-red-500">*</span>
+                            <label for="proofFile" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                證明文件
                             </label>
-                            <input type="date" id="expiryDate" name="expiry_date" required class="input-field">
+                            <div class="relative border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors text-center">
+                                <input type="file" id="proofFile" name="proof" accept="image/*,.pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                <div class="text-gray-500">
+                                    <i class="fa-solid fa-cloud-arrow-up text-2xl mb-2 text-gray-400"></i>
+                                    <p class="text-sm font-medium">點擊或拖曳檔案至此</p>
+                                    <p class="text-xs text-gray-400 mt-1">支援圖片 (JPG, PNG) 或 PDF 格式</p>
+                                </div>
+                            </div>
+                            <div id="fileNameDisplay" class="hidden text-xs text-blue-600 mt-2 text-left">
+                                <i class="fa-solid fa-check mr-1"></i> 已選擇: <span id="fileNameText"></span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label for="proofFile" class="block text-sm font-medium text-gray-700 mb-1">
-                            證照證明文件
-                        </label>
-                        <input type="file" id="proofFile" name="proof" accept="image/*,.pdf" class="input-field">
-                        <p class="text-xs text-gray-500 mt-1">支援圖片或PDF格式</p>
-                    </div>
+                        <div id="uploadErrorMessage" class="text-red-600 text-sm hidden bg-red-50 p-3 rounded-md border border-red-100 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span id="uploadErrorText"></span>
+                        </div>
+                    </form>
+                </div>
 
-                    <div id="uploadErrorMessage" class="text-red-600 text-sm hidden"></div>
-
-                    <div class="flex justify-end space-x-4">
-                        <button type="button" onclick="hideUploadModal()" class="btn-secondary">
-                            取消
-                        </button>
-                        <button type="submit" class="btn-primary">
-                            上傳
-                        </button>
-                    </div>
-                </form>
+                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-100">
+                    <button type="submit" form="uploadForm" id="uploadSubmitBtn" class="w-full inline-flex justify-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto transition-colors">
+                        確認上傳
+                    </button>
+                    <button type="button" onclick="hideUploadModal()" class="mt-3 inline-flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition-colors">
+                        取消
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -95,33 +131,30 @@
     <script src="/static/js/api.js"></script>
     <script src="/static/js/navigation.js"></script>
     <script>
-        // === 將核心互動函式定義在全域作用域，解決 ReferenceError ===
+        document.getElementById('proofFile').addEventListener('change', function(e) {
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const fileNameText = document.getElementById('fileNameText');
+            if (this.files && this.files.length > 0) {
+                fileNameText.textContent = this.files[0].name;
+                fileNameDisplay.classList.remove('hidden');
+            } else {
+                fileNameDisplay.classList.add('hidden');
+            }
+        });
 
-        /**
-         * 顯示上傳 Modal
-         * (在 HTML 中被 onclick="showUploadModal()" 呼叫)
-         */
         function showUploadModal() {
             document.getElementById('uploadModal').classList.remove('hidden');
             document.getElementById('uploadForm').reset();
+            document.getElementById('fileNameDisplay').classList.add('hidden');
         }
 
-        /**
-         * 隱藏上傳 Modal
-         * (在 HTML 中被 onclick="hideUploadModal()" 呼叫)
-         */
         function hideUploadModal() {
             document.getElementById('uploadModal').classList.add('hidden');
             document.getElementById('uploadErrorMessage').classList.add('hidden');
         }
 
-        /**
-         * 刪除證照
-         * (在 HTML 中被 onclick="deleteLicense(id)" 呼叫)
-         */
         async function deleteLicense(licenseId) {
-            if (!confirm('確定要刪除此證照嗎？')) return;
-
+            if (!confirm('確定要刪除此證照嗎？此動作無法復原。')) return;
             try {
                 await licenseAPI.deleteLicense(licenseId);
                 showNotification('證照已刪除', 'success');
@@ -131,28 +164,19 @@
             }
         }
 
-        // 頁面初始化邏輯和輔助函式可以保留在 IIFE 或全域
-
-        /**
-         * 查看許可證圖片（帶認證）
-         */
         async function viewLicenseImage(proofUrl) {
             if (!proofUrl) return;
-            
             const token = getToken();
             if (!token) {
                 showNotification('請先登入', 'error');
                 return;
             }
-
             try {
-                // 如果是新的受保護路由，直接使用；如果是舊的 /uploads 路由，轉換為新路由
                 let imageUrl = proofUrl;
                 if (proofUrl.startsWith('/uploads/licenses/')) {
                     const filename = proofUrl.replace('/uploads/licenses/', '');
                     imageUrl = `${API_BASE_URL}/caregivers/licenses/image/${filename}`;
                 } else if (!proofUrl.startsWith('http')) {
-                    // 如果已經是相對路徑的 API 路由，加上 API_BASE_URL
                     if (proofUrl.startsWith('/api/v1/')) {
                         imageUrl = `http://localhost:8080${proofUrl}`;
                     } else {
@@ -160,27 +184,20 @@
                     }
                 }
 
-                // 使用 fetch 帶上 token 獲取圖片
                 const response = await fetch(imageUrl, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
+                if (!response.ok) throw new Error('無法載入圖片');
 
-                if (!response.ok) {
-                    throw new Error('無法載入圖片');
-                }
-
-                // 將響應轉換為 blob 並在新窗口中顯示
                 const blob = await response.blob();
                 const blobUrl = URL.createObjectURL(blob);
                 const newWindow = window.open();
                 if (newWindow) {
                     newWindow.document.write(`
                         <html>
-                            <head><title>證照圖片</title></head>
-                            <body style="margin:0;padding:20px;text-align:center;background:#f0f0f0;">
-                                <img src="${blobUrl}" style="max-width:100%;max-height:90vh;border:1px solid #ddd;box-shadow:0 2px 8px rgba(0,0,0,0.1);" />
+                            <head><title>證照預覽</title></head>
+                            <body style="margin:0;padding:0;background:#222;display:flex;justify-content:center;align-items:center;height:100vh;">
+                                <img src="${blobUrl}" style="max-width:95%;max-height:95vh;box-shadow:0 0 20px rgba(0,0,0,0.5);" />
                             </body>
                         </html>
                     `);
@@ -190,60 +207,59 @@
             }
         }
 
-        // 輔助函式: 顯示證照列表
         function displayLicenses(licenses) {
             const listDiv = document.getElementById('licensesList');
-
             if (!licenses || licenses.length === 0) {
                 listDiv.innerHTML = `
-                    <div class="card text-center py-8">
-                        <p class="text-gray-600 mb-4">目前沒有證照</p>
-                        <button onclick="showUploadModal()" class="btn-primary">上傳第一張證照</button>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                            <i class="fa-solid fa-certificate text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">目前沒有證照</h3>
+                        <p class="text-gray-500 mb-6">上傳您的專業證照，增加案主對您的信賴感。</p>
+                        <button onclick="showUploadModal()" class="text-blue-600 font-medium hover:text-blue-700 hover:underline">
+                            立即上傳第一張證照 &rarr;
+                        </button>
                     </div>
                 `;
                 return;
             }
 
-            const statusColors = {
-                'pending': 'bg-yellow-100 text-yellow-800',
-                'approved': 'bg-green-100 text-green-800',
-                'rejected': 'bg-red-100 text-red-800',
+            const statusConfig = {
+                'pending': { class: 'bg-yellow-50 text-yellow-700 border border-yellow-200', icon: 'fa-hourglass-half', text: '審核中' },
+                'approved': { class: 'bg-green-50 text-green-700 border border-green-200', icon: 'fa-check-circle', text: '已通過' },
+                'rejected': { class: 'bg-red-50 text-red-700 border border-red-200', icon: 'fa-circle-xmark', text: '未通過' },
             };
 
-            const statusText = {
-                'pending': '審核中',
-                'approved': '已通過',
-                'rejected': '已拒絕',
-            };
-
-            listDiv.innerHTML = licenses.map(license => `
-                <div class="card">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="flex items-center space-x-3 mb-2">
-                                <h3 class="text-xl font-semibold text-gray-800">${license.name}</h3>
-                                <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColors[license.status] || 'bg-gray-100 text-gray-800'}">
-                                    ${statusText[license.status] || license.status}
-                                </span>
+            listDiv.innerHTML = licenses.map(license => {
+                const status = statusConfig[license.status] || { class: 'bg-gray-100 text-gray-800', icon: 'fa-circle', text: license.status };
+                return `
+                <div class="license-card bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div class="flex items-start gap-4">
+                            <div class="hidden md:flex flex-shrink-0 w-12 h-12 bg-blue-50 rounded-lg items-center justify-center text-blue-600">
+                                <i class="fa-solid fa-certificate text-xl"></i>
                             </div>
-                            <div class="text-gray-600 space-y-1">
-                                <p><span class="font-medium">發證日期：</span>${formatDate(license.issue_date)}</p>
-                                <p><span class="font-medium">有效期限：</span>${formatDate(license.expiry_date)}</p>
-                                ${license.proof_url ? `<p><span class="font-medium">證明文件：</span><button onclick="viewLicenseImage('${license.proof_url}')" class="text-primary-600 hover:underline cursor-pointer">查看</button></p>` : ''}
+                            <div class="flex-1">
+                                <div class="flex flex-wrap items-center gap-2 mb-2">
+                                    <h3 class="text-lg font-bold text-gray-800">${license.name}</h3>
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${status.class}">
+                                        <i class="fa-solid ${status.icon}"></i> ${status.text}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm text-gray-600">
+                                    <p class="flex items-center gap-2"><i class="fa-regular fa-calendar text-gray-400"></i><span class="font-medium">發證：</span>${formatDate(license.issue_date)}</p>
+                                    <p class="flex items-center gap-2"><i class="fa-regular fa-calendar-xmark text-gray-400"></i><span class="font-medium">到期：</span>${formatDate(license.expiry_date)}</p>
+                                </div>
+                                ${license.proof_url ? `<div class="mt-3"><button onclick="viewLicenseImage('${license.proof_url}')" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"><i class="fa-solid fa-eye"></i> 查看證明文件</button></div>` : ''}
                             </div>
                         </div>
-                        ${license.status === 'pending' || license.status === 'rejected' ? `
-                            <button onclick="deleteLicense(${license.license_id})" 
-                                class="btn-secondary bg-red-500 hover:bg-red-600 text-white ml-4">
-                                刪除
-                            </button>
-                        ` : ''}
+                        ${(license.status === 'pending' || license.status === 'rejected') ? `<div class="flex items-start pt-2 md:pt-0"><button onclick="deleteLicense(${license.license_id})" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition-colors" title="刪除證照"><i class="fa-solid fa-trash-can text-lg"></i></button></div>` : ''}
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
-        // 輔助函式: 載入證照列表
         async function loadLicenses() {
             try {
                 const licenses = await licenseAPI.getMyLicenses();
@@ -253,15 +269,10 @@
             }
         }
 
-        // === IIFE: 頁面初始化和事件監聽 ===
         (function () {
-            // 授權檢查和頁面初始化邏輯
             if (!requireCaregiverRole()) return;
-
-            // 初始載入資料
             loadLicenses();
 
-            // 上傳表單事件監聽 (不需要暴露到全域，因為它是通過 addEventListener 綁定的)
             document.getElementById('uploadForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
 
@@ -276,27 +287,32 @@
                 }
 
                 const errorDiv = document.getElementById('uploadErrorMessage');
-                const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+                const errorText = document.getElementById('uploadErrorText');
+                
+                // 修正點 2: 直接使用 ID 抓取按鈕，因為它在 Form 標籤之外
+                const submitBtn = document.getElementById('uploadSubmitBtn');
 
                 try {
                     errorDiv.classList.add('hidden');
+                    // 這裡現在可以正確運作了
                     submitBtn.disabled = true;
-                    submitBtn.textContent = '上傳中...';
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 上傳中...';
 
                     await licenseAPI.uploadLicense(formData);
                     showNotification('證照上傳成功！等待審核', 'success');
                     hideUploadModal();
                     loadLicenses();
                 } catch (error) {
-                    errorDiv.textContent = error.message || '上傳失敗，請稍後再試';
+                    errorText.textContent = error.message || '上傳失敗，請稍後再試';
                     errorDiv.classList.remove('hidden');
                 } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = '上傳';
+                    if(submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '確認上傳';
+                    }
                 }
             });
         })();
     </script>
 </body>
-
 </html>

@@ -20,6 +20,10 @@ module.exports = {
           900: '#0c4a6e',
         },
       },
+      fontFamily: {
+        // 讓 'Noto Sans TC' 生效
+        sans: ['"Noto Sans TC"', 'sans-serif'],
+      }
     },
   },
   plugins: [],

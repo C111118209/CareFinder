@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,19 +8,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/static/css/output.css" rel="stylesheet">
 </head>
+
 <body class="bg-gray-50">
-    <!-- Navigation -->
     <nav class="bg-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-8">
-                    <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
+                    <a href="/dashboard.html" class="flex items-center gap-2 text-2xl font-bold text-primary-600">
+                        CareFinder
+                    </a>
                     <div data-nav-menu class="flex space-x-4">
-                        <!-- Navigation will be populated by navigation.js -->
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button onclick="authAPI.logout()" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                    <button onclick="authAPI.logout()"
+                        class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
                 </div>
             </div>
         </div>
@@ -29,8 +32,8 @@
         <h2 class="text-3xl font-bold mb-6 text-gray-800">我的合約</h2>
 
         <div id="contractsContent" class="space-y-4">
-            <div class="text-center">
-                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            <div class="text-center py-10">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 <p class="mt-4 text-gray-600">載入中...</p>
             </div>
         </div>
@@ -39,94 +42,70 @@
     <script src="/static/js/api.js"></script>
     <script src="/static/js/navigation.js"></script>
     <script>
-        // === 將核心函數定義在全域作用域，解決 ReferenceError ===
-        // 這些函數需要在 HTML 中被 onclick 調用，所以必須定義在全域作用域
+        // === 全域工具函數 ===
 
-        /**
-         * 查看合約詳情
-         * (在 HTML 中被 onclick="viewContractDetails(contractId)" 呼叫)
-         */
+        function formatDate(dateString) {
+            if (!dateString) return '無資料';
+            const date = new Date(dateString);
+            return isNaN(date.getTime()) ? '格式錯誤' : date.toLocaleDateString('zh-TW', {
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            });
+        }
+
+        // === 用戶操作函數 (供 HTML onclick 調用) ===
+
         function viewContractDetails(contractId) {
             window.location.href = `/contract-details.html?id=${contractId}`;
         }
 
-        /**
-         * 查看詳細資料
-         * (在 HTML 中被 onclick="viewDetails(contractId, type)" 呼叫)
-         */
         function viewDetails(contractId, type) {
             window.location.href = `/contract-details.html?id=${contractId}&view=${type}`;
         }
 
-        /**
-         * 接受合約
-         * (在 HTML 中被 onclick="acceptContract(contractId)" 呼叫)
-         */
         async function acceptContract(contractId) {
             if (!confirm('確定要接受這個合約嗎？')) return;
-
             try {
                 await contractAPI.acceptContract(contractId);
-                showNotification('合約已接受！', 'success');
+                alert('合約已接受！'); // 簡單 fallback，防止 showNotification 未定義
                 loadContracts();
             } catch (error) {
-                showNotification('操作失敗：' + error.message, 'error');
+                alert('操作失敗：' + error.message);
             }
         }
 
-        /**
-         * 完成服務
-         * (在 HTML 中被 onclick="completeContract(contractId)" 呼叫)
-         */
         async function completeContract(contractId) {
             if (!confirm('確定要標記服務為已完成嗎？')) return;
-
             try {
                 await contractAPI.completeContract(contractId);
-                showNotification('服務已標記為完成！', 'success');
+                alert('服務已標記為完成！');
                 loadContracts();
             } catch (error) {
-                showNotification('操作失敗：' + error.message, 'error');
+                alert('操作失敗：' + error.message);
             }
         }
 
-        /**
-         * 續約
-         * (在 HTML 中被 onclick="renewContract(contractId)" 呼叫)
-         */
         async function renewContract(contractId) {
             const endDate = prompt('請輸入續約結束日期 (YYYY-MM-DD):');
             if (!endDate) return;
-
             try {
                 await contractAPI.renewContract(contractId, endDate);
-                showNotification('續約已發起！', 'success');
+                alert('續約已發起！');
                 loadContracts();
             } catch (error) {
-                showNotification('續約失敗：' + error.message, 'error');
+                alert('續約失敗：' + error.message);
             }
         }
 
-        /**
-         * 顯示評價模態框
-         * (在 HTML 中被 onclick="showReviewModal(contractId, caregiverId)" 呼叫)
-         */
         function showReviewModal(contractId, caregiverId) {
             const rating = prompt('請輸入評分 (1-5):');
             if (!rating || rating < 1 || rating > 5) {
-                showNotification('評分必須在 1-5 之間', 'error');
+                alert('評分必須在 1-5 之間');
                 return;
             }
-
             const comment = prompt('請輸入評價留言（可選）:') || '';
-
             createReview(contractId, caregiverId, parseInt(rating), comment);
         }
 
-        /**
-         * 建立評價
-         * (被 showReviewModal 呼叫)
-         */
         async function createReview(contractId, caregiverId, rating, comment) {
             try {
                 await reviewAPI.createReview({
@@ -135,31 +114,26 @@
                     rating: rating,
                     comment: comment,
                 });
-                showNotification('評價已提交！', 'success');
+                alert('評價已提交！');
                 loadContracts();
             } catch (error) {
-                showNotification('提交評價失敗：' + error.message, 'error');
+                alert('提交評價失敗：' + error.message);
             }
         }
 
-        // === 輔助函數（不需要暴露到全域，但為了代碼組織放在這裡）===
-        /**
-         * 載入合約列表
-         * (只在頁面初始化時調用，不需要暴露到全域)
-         */
+        // === 頁面邏輯函數 ===
+
         async function loadContracts() {
             try {
                 const contracts = await contractAPI.getContracts();
                 displayContracts(contracts);
             } catch (error) {
-                showNotification('載入失敗：' + error.message, 'error');
+                console.error(error);
+                document.getElementById('contractsContent').innerHTML =
+                    `<p class="text-red-500 text-center">載入失敗：${error.message}</p>`;
             }
         }
 
-        /**
-         * 顯示合約列表
-         * (只在頁面初始化時調用，不需要暴露到全域)
-         */
         function displayContracts(contracts) {
             const contractsDiv = document.getElementById('contractsContent');
 
@@ -168,7 +142,15 @@
                 return;
             }
 
+            // 取得當前用戶資訊，用於判斷按鈕顯示
+            const currentUser = typeof getUser === 'function' ? getUser() : { role: '' };
+
             contractsDiv.innerHTML = contracts.map(contract => {
+                // 修正點 1：處理 JSON 大小寫不一致問題
+                // 優先使用 User (大寫)，若無則嘗試 user (小寫)，最後給空物件避免報錯
+                const userObj = contract.User || contract.user || {};
+                const caregiverObj = contract.Caregiver || contract.caregiver || {};
+
                 const statusColors = {
                     'pending': 'bg-yellow-100 text-yellow-800',
                     'active': 'bg-green-100 text-green-800',
@@ -183,16 +165,17 @@
                     'canceled': '已取消',
                 };
 
+                // 修正點 2：使用 Tailwind Class 替代 .card，確保樣式正確
                 return `
-                    <div class="card">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+                            <div class="flex-1 w-full">
                                 <div class="flex items-center space-x-4 mb-4">
-                                    <h3 class="text-xl font-semibold">合約 #${contract.contract_id}</h3>
+                                    <h3 class="text-xl font-semibold text-gray-800">合約 #${contract.contract_id}</h3>
                                     <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColors[contract.status] || 'bg-gray-100 text-gray-800'}">
                                         ${statusText[contract.status] || contract.status}
                                     </span>
-                                    ${contract.is_renewal ? '<span class="text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded">續約</span>' : ''}
+                                    ${contract.is_renewal ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">續約</span>' : ''}
                                 </div>
                                 
                                 <div class="grid md:grid-cols-2 gap-4 text-gray-700 mb-4">
@@ -205,40 +188,41 @@
                                     </div>
                                 </div>
                                 
-                                <div class="border-t pt-4">
+                                <div class="border-t pt-4 mt-4">
                                     <div class="grid md:grid-cols-2 gap-6">
                                         <div class="bg-blue-50 p-4 rounded-lg">
                                             <h4 class="font-semibold text-blue-800 mb-2">照護者資訊</h4>
-                                            <p class="text-sm"><span class="font-medium">姓名：</span>${contract.caregiver?.nickname || contract.caregiver?.email || '未提供'}</p>
-                                            <p class="text-sm"><span class="font-medium">電子郵件：</span>${contract.caregiver?.email || '未提供'}</p>
-                                            ${contract.caregiver?.role === 'caregiver' ? `<button onclick="viewDetails(${contract.contract_id}, 'caregiver')" class="mt-2 text-sm text-blue-600 hover:text-blue-800 underline">查看詳細資料</button>` : ''}
+                                            <p class="text-sm"><span class="font-medium">姓名：</span>${caregiverObj.nickname || caregiverObj.email || '未提供'}</p>
+                                            <p class="text-sm"><span class="font-medium">電子郵件：</span>${caregiverObj.email || '未提供'}</p>
+                                            ${caregiverObj.role === 'caregiver' ? `<button onclick="viewDetails(${contract.contract_id}, 'caregiver')" class="mt-2 text-sm text-blue-600 hover:text-blue-800 underline">查看詳細資料</button>` : ''}
                                         </div>
+
                                         <div class="bg-green-50 p-4 rounded-lg">
                                             <h4 class="font-semibold text-green-800 mb-2">家屬資訊</h4>
-                                            <p class="text-sm"><span class="font-medium">姓名：</span>${contract.user?.nickname || contract.user?.email || '未提供'}</p>
-                                            <p class="text-sm"><span class="font-medium">電子郵件：</span>${contract.user?.email || '未提供'}</p>
+                                            <p class="text-sm"><span class="font-medium">姓名：</span>${userObj.nickname || userObj.email || '未提供'}</p>
+                                            <p class="text-sm"><span class="font-medium">電子郵件：</span>${userObj.email || '未提供'}</p>
                                             <button onclick="viewDetails(${contract.contract_id}, 'user')" class="mt-2 text-sm text-green-600 hover:text-green-800 underline">查看詳細資料</button>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <div class="mt-4">
-                                    <button onclick="viewContractDetails(${contract.contract_id})" class="text-sm text-primary-600 hover:text-primary-800 underline">查看完整合約詳情</button>
+                                    <button onclick="viewContractDetails(${contract.contract_id})" class="text-sm text-blue-600 hover:text-blue-800 underline font-medium">查看完整合約詳情 &rarr;</button>
                                 </div>
                             </div>
 
-                            <div class="ml-4 flex flex-col space-y-2">
-                                ${contract.status === 'pending' && getUser().role === 'caregiver' ? `
-                                    <button onclick="acceptContract(${contract.contract_id})" class="btn-primary whitespace-nowrap">接受合約</button>
+                            <div class="flex flex-row md:flex-col gap-2 mt-2 md:mt-0 w-full md:w-auto">
+                                ${contract.status === 'pending' && currentUser.role === 'caregiver' ? `
+                                    <button onclick="acceptContract(${contract.contract_id})" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition whitespace-nowrap">接受合約</button>
                                 ` : ''}
                                 ${contract.status === 'active' ? `
-                                    <button onclick="completeContract(${contract.contract_id})" class="btn-primary whitespace-nowrap">完成服務</button>
+                                    <button onclick="completeContract(${contract.contract_id})" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition whitespace-nowrap">完成服務</button>
                                 ` : ''}
-                                ${contract.status === 'completed' && getUser().role === 'user' ? `
-                                    <button onclick="showReviewModal(${contract.contract_id}, ${contract.caregiver_id})" class="btn-primary whitespace-nowrap">評價</button>
+                                ${contract.status === 'completed' && currentUser.role === 'user' ? `
+                                    <button onclick="showReviewModal(${contract.contract_id}, ${contract.caregiver_id})" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition whitespace-nowrap">評價</button>
                                 ` : ''}
-                                ${contract.status === 'active' && getUser().role === 'user' && canRenew(contract.end_date) ? `
-                                    <button onclick="renewContract(${contract.contract_id})" class="btn-secondary whitespace-nowrap">續約</button>
+                                ${contract.status === 'active' && currentUser.role === 'user' && canRenew(contract.end_date) ? `
+                                    <button onclick="renewContract(${contract.contract_id})" class="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 transition whitespace-nowrap">續約</button>
                                 ` : ''}
                             </div>
                         </div>
@@ -247,10 +231,6 @@
             }).join('');
         }
 
-        /**
-         * 檢查是否可以續約
-         * (在 displayContracts 中被調用)
-         */
         function canRenew(endDate) {
             const end = new Date(endDate);
             const now = new Date();
@@ -258,28 +238,19 @@
             return daysUntilEnd <= 30 && daysUntilEnd >= 0;
         }
 
-        /**
-         * 計算合約期間
-         * (在 displayContracts 中被調用)
-         */
         function calculateDuration(startDate, endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
             const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 0;
         }
 
-        // === IIFE: 頁面初始化邏輯 ===
-        // 使用 IIFE 包裹頁面初始化邏輯，解決 Illegal return statement 錯誤
-        // 只有初始化邏輯包在 IIFE 中，需要被 HTML 調用的函數都定義在全域
+        // === 初始化 ===
         (function () {
-            if (!requireAuth()) return;
-
-            // 載入合約列表
+            if (typeof requireAuth === 'function' && !requireAuth()) return;
             loadContracts();
         })();
     </script>
 </body>
-</html>
 
+</html>

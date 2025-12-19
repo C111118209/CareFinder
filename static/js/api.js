@@ -1,8 +1,5 @@
-// 舊程式碼
-// const API_BASE_URL = 'http://localhost:8080/api/v1';
-
 // 替換為 Render 網址
-const API_BASE_URL = 'https://carefinder-3s9l.onrender.com/api/v1'; 
+const API_BASE_URL = './api/v1'; 
 
 // Get token from localStorage
 function getToken() {

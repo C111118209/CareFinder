@@ -9,90 +9,145 @@
     <link href="/static/css/output.css" rel="stylesheet">
 </head>
 
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-md">
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <nav class="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-8">
-                    <a href="/dashboard.html" class="text-2xl font-bold text-primary-600">CareFinder</a>
-                    <div data-nav-menu class="flex space-x-4">
-                        <!-- Navigation will be populated by navigation.js -->
-                    </div>
+                    <a href="/dashboard.html" class="flex items-center gap-2 text-2xl font-bold text-primary-600">
+                        CareFinder
+                    </a>
+                    <div data-nav-menu class="hidden md:flex space-x-4"></div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <button onclick="authAPI.logout()"
-                        class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">登出</button>
+                        class="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        <i class="fa-solid fa-right-from-bracket mr-1"></i> 登出
+                    </button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 class="text-3xl font-bold mb-6 text-gray-800">照護者檔案設定</h2>
+    <div class="flex-grow max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
 
-        <div class="card">
-            <form id="profileForm" class="space-y-6">
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">
-                            姓名 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" id="fullName" name="full_name" required class="input-field"
-                            placeholder="請輸入您的姓名">
-                    </div>
-
-                    <div>
-                        <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">性別</label>
-                        <select id="gender" name="gender" class="input-field">
-                            <option value="">請選擇</option>
-                            <option value="male">男性</option>
-                            <option value="female">女性</option>
-                            <option value="other">其他</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
-                            聯絡電話 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="tel" id="phone" name="phone" required class="input-field" placeholder="0912345678">
-                    </div>
-
-                    <div>
-                        <label for="serviceRate" class="block text-sm font-medium text-gray-700 mb-1">
-                            服務時薪 (NT$) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" id="serviceRate" name="service_rate" required min="0" step="10"
-                            class="input-field" placeholder="500">
-                    </div>
-                </div>
-
-                <div>
-                    <label for="address" class="block text-sm font-medium text-gray-700 mb-1">
-                        服務地點/居住地 <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" id="address" name="address" required class="input-field" placeholder="例如：台北市信義區">
-                </div>
-
-                <div>
-                    <label for="bio" class="block text-sm font-medium text-gray-700 mb-1">自我介紹</label>
-                    <textarea id="bio" name="bio" rows="5" class="input-field"
-                        placeholder="請介紹您的照護經驗、專長、服務理念等..."></textarea>
-                </div>
-
-                <div id="errorMessage" class="text-red-600 text-sm hidden"></div>
-
-                <div class="flex justify-end space-x-4">
-                    <button type="button" onclick="window.location.reload()" class="btn-secondary">
-                        取消
-                    </button>
-                    <button type="submit" class="btn-primary">
-                        <span id="submitText">儲存</span>
-                    </button>
-                </div>
-            </form>
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">建立您的照護者檔案</h2>
+            <p class="text-gray-500">完善的資料能讓案主更信任您，提高接案成功率。</p>
         </div>
+
+        <form id="profileForm" class="space-y-8">
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800">基本資料</h3>
+                </div>
+
+                <div class="p-6 md:p-8 space-y-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                真實姓名 <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-gray-400"><i
+                                        class="fa-solid fa-signature"></i></span>
+                                <input type="text" id="fullName" name="full_name" required class="input-field pl-10"
+                                    placeholder="請輸入姓名">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="gender" class="block text-sm font-medium text-gray-700 mb-1.5">性別</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-gray-400"><i
+                                        class="fa-solid fa-venus-mars"></i></span>
+                                <select id="gender" name="gender" class="input-field pl-10 appearance-none bg-white">
+                                    <option value="">請選擇</option>
+                                    <option value="male">男性</option>
+                                    <option value="female">女性</option>
+                                    <option value="other">其他</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                聯絡電話 <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-gray-400"><i
+                                        class="fa-solid fa-phone"></i></span>
+                                <input type="tel" id="phone" name="phone" required class="input-field pl-10"
+                                    placeholder="0912345678">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="address" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                服務/居住地點 <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-gray-400"><i
+                                        class="fa-solid fa-location-dot"></i></span>
+                                <input type="text" id="address" name="address" required class="input-field pl-10"
+                                    placeholder="例如：台北市信義區">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800">服務詳情</h3>
+                </div>
+
+                <div class="p-6 md:p-8 space-y-6">
+                    <div class="input-group">
+                        <label for="serviceRate" class="block text-sm font-medium text-gray-700 mb-1.5">
+                            期望時薪 (NT$) <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative max-w-xs">
+                            <span class="absolute left-3 top-3 text-gray-400"><i
+                                    class="fa-solid fa-sack-dollar"></i></span>
+                            <input type="number" id="serviceRate" name="service_rate" required min="0" step="10"
+                                class="input-field pl-10" placeholder="500">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="bio" class="block text-sm font-medium text-gray-700 mb-1.5">自我介紹與經驗</label>
+                        <textarea id="bio" name="bio" rows="6" class="input-field resize-y"
+                            placeholder="請詳細描述您的照護經驗、擁有的證照、或是您的服務理念..."></textarea>
+                        <p class="text-xs text-gray-400 mt-1 text-right">建議字數：100字以上</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorMessage" class="bg-red-50 text-red-600 p-4 rounded-lg text-sm hidden flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <div class="flex items-center justify-end space-x-4 pt-4 border-t border-gray-200">
+                <button type="button" onclick="window.location.reload()"
+                    class="px-6 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">
+                    取消
+                </button>
+                <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-lg font-medium shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i>
+                    <span id="submitText">儲存檔案</span>
+                </button>
+            </div>
+        </form>
     </div>
 
     <script src="/static/js/api.js"></script>
@@ -100,8 +155,6 @@
     <script>
         (function () {
             if (!requireCaregiverRole()) return;
-
-            // Check if profile exists and load it
             loadExistingProfile();
 
             document.getElementById('profileForm').addEventListener('submit', async (e) => {
@@ -117,30 +170,21 @@
                 };
 
                 const errorDiv = document.getElementById('errorMessage');
+                const errorText = document.getElementById('errorText');
                 const submitBtn = document.querySelector('button[type="submit"]');
                 const submitText = document.getElementById('submitText');
 
                 try {
                     errorDiv.classList.add('hidden');
                     submitBtn.disabled = true;
-                    submitText.textContent = '儲存中...';
+                    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+                    submitText.textContent = '處理中...';
 
-                    // Try to get existing profile first
-                    let existingProfile = null;
-                    try {
-                        // We need to get user ID from token or API
-                        const userId = await getCurrentUserId();
-                        // Try to find profile by checking if it exists
-                        // For now, we'll try to create first, if it fails with conflict, we'll update
-                    } catch (err) {
-                        // Profile doesn't exist, will create new one
-                    }
-
+                    // Try to create, if conflict then update
                     try {
                         await caregiverAPI.createProfile(formData);
                         showNotification('檔案建立成功！', 'success');
                     } catch (error) {
-                        // If profile exists, try to update
                         if (error.message.includes('already exists') || error.message.includes('409')) {
                             await caregiverAPI.updateProfile(formData);
                             showNotification('檔案更新成功！', 'success');
@@ -151,42 +195,26 @@
 
                     window.location.reload();
                 } catch (error) {
-                    errorDiv.textContent = error.message || '操作失敗，請稍後再試';
+                    errorText.textContent = error.message || '操作失敗，請稍後再試';
                     errorDiv.classList.remove('hidden');
                 } finally {
                     submitBtn.disabled = false;
-                    submitText.textContent = '儲存';
+                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                    submitText.textContent = '儲存檔案';
                 }
             });
 
             async function loadExistingProfile() {
                 try {
                     const profile = await caregiverAPI.getMyProfile();
-
-                    // 填充表單欄位
-                    if (profile.full_name) {
-                        document.getElementById('fullName').value = profile.full_name;
-                    }
-                    if (profile.gender) {
-                        document.getElementById('gender').value = profile.gender;
-                    }
-                    if (profile.phone) {
-                        document.getElementById('phone').value = profile.phone;
-                    }
-                    if (profile.address) {
-                        document.getElementById('address').value = profile.address;
-                    }
-                    if (profile.bio) {
-                        document.getElementById('bio').value = profile.bio;
-                    }
-                    if (profile.service_rate) {
-                        document.getElementById('serviceRate').value = profile.service_rate;
-                    }
-
-                    // 更新提交按鈕文字
-                    document.getElementById('submitText').textContent = '更新';
+                    if (profile.full_name) document.getElementById('fullName').value = profile.full_name;
+                    if (profile.gender) document.getElementById('gender').value = profile.gender;
+                    if (profile.phone) document.getElementById('phone').value = profile.phone;
+                    if (profile.address) document.getElementById('address').value = profile.address;
+                    if (profile.bio) document.getElementById('bio').value = profile.bio;
+                    if (profile.service_rate) document.getElementById('serviceRate').value = profile.service_rate;
+                    document.getElementById('submitText').textContent = '更新檔案';
                 } catch (error) {
-                    // Profile doesn't exist yet, show empty form
                     console.log('Profile not found, showing empty form');
                 }
             }

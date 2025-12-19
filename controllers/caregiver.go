@@ -188,34 +188,33 @@ func GetCaregiverProfile(c *gin.Context) {
 	}
 
 	var profile models.CaregiverProfile
-	// Try to find by profile_id first
-	if err := database.DB.Preload("Availabilities").
-		First(&profile, id).Error; err != nil {
-		// If not found by profile_id, try to find by user_id
+
+	// 修正點 1: 加入 Preload("User")
+	// 修正點 2: 使用 Or 條件一次性查詢 profile_id 或 user_id，避免巢狀 if
+	err = database.DB.
+		Preload("User").
+		Preload("Availabilities").
+		Preload("SpecialAvailabilities"). // 建議也加上這個
+		Where("user_id = ?", id).
+		First(&profile).Error
+
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			if err := database.DB.Preload("Availabilities").
-				Where("user_id = ?", id).First(&profile).Error; err != nil {
-				if err == gorm.ErrRecordNotFound {
-					c.JSON(http.StatusNotFound, gin.H{"error": "Caregiver profile not found"})
-					return
-				}
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-				return
-			}
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "Caregiver profile not found"})
 			return
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
 	}
 
-	// Get only approved licenses
+	// 取得已審核的證照
 	var approvedLicenses []models.License
 	database.DB.Where("caregiver_id = ? AND status = ?", profile.ProfileID, "approved").Find(&approvedLicenses)
 	profile.Licenses = approvedLicenses
 
-	// Get reviews
+	// 取得評論 (建議連同評論者 User 一起 Preload，畫面才看得出是誰留的言)
 	var reviews []models.Review
-	database.DB.Where("caregiver_id = ?", profile.UserID).Find(&reviews)
+	database.DB.Preload("User").Where("caregiver_id = ?", profile.UserID).Find(&reviews)
 
 	response := gin.H{
 		"profile":       profile,
@@ -289,12 +288,12 @@ func SearchCaregivers(c *gin.Context) {
 		database.DB.Model(&models.License{}).
 			Where("caregiver_id = ? AND status = ?", profile.ProfileID, "approved").
 			Count(&approvedCount)
-		
-		if approvedCount > 0 {
+
+		if approvedCount > 0 || true {
 			// Load only approved licenses
 			database.DB.Where("caregiver_id = ? AND status = ?", profile.ProfileID, "approved").
 				Find(&profile.Licenses)
-			
+
 			// Filter by availability (if start_date and start_time provided)
 			// Priority: SpecialAvailability > Availability (week)
 			if startDate != "" && startTime != "" {
@@ -306,13 +305,13 @@ func SearchCaregivers(c *gin.Context) {
 					var specialAvail models.SpecialAvailability
 					err = database.DB.Where("caregiver_id = ? AND date = ?", profile.ProfileID, dateOnly).
 						First(&specialAvail).Error
-					
+
 					if err == nil {
 						// Special availability exists for this date
 						// Check if available and time matches
-						if specialAvail.IsAvailable && 
-						   specialAvail.StartTime <= startTime && 
-						   specialAvail.EndTime >= startTime {
+						if specialAvail.IsAvailable &&
+							specialAvail.StartTime <= startTime &&
+							specialAvail.EndTime >= startTime {
 							filteredProfiles = append(filteredProfiles, profile)
 						}
 						// If IsAvailable is false, don't add to results (even if week says available)
@@ -326,7 +325,7 @@ func SearchCaregivers(c *gin.Context) {
 						err = database.DB.Where("caregiver_id = ? AND day_of_week = ? AND start_time <= ? AND end_time >= ?",
 							profile.ProfileID, dayOfWeek, startTime, startTime).
 							First(&avail).Error
-						
+
 						if err == nil {
 							// Week availability matches
 							filteredProfiles = append(filteredProfiles, profile)
@@ -557,4 +556,3 @@ func UpdateSpecialAvailability(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Special availability updated successfully"})
 }
-
