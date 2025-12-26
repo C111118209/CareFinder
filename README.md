@@ -21,15 +21,20 @@
 - **JWT** - 身份驗證
 
 ### 前端
-- **HTML5** - 標記語言
-- **Tailwind CSS** - 使用 CDN 版本
-- **Vanilla JavaScript** - 無框架 JavaScript
+- **Vue 3** - 前端框架
+- **Vue Router** - 路由管理
+- **Pinia** - 狀態管理
+- **Axios** - HTTP 客戶端
+- **Tailwind CSS** - CSS 框架
+- **Vite** - 構建工具
 
 ## 快速開始
 
 ### 前置需求
 
 - Go 1.22 或更高版本
+- Node.js 18 或更高版本
+- npm 或 yarn
 - 環境變數文件 `.env`
 
 ### 安裝步驟
@@ -40,32 +45,46 @@ git clone <repository-url>
 cd CareFinder
 ```
 
-2. **設置環境變數**
+2. **設置後端環境變數**
 
-創建 `.env` 文件：
+在項目根目錄創建 `.env` 文件：
 ```env
 JWT_SECRET=your-secret-key-here
 TOKEN_HOUR_LIFESPAN=24
 ```
 
-3. **安裝 Go 依賴**
+3. **安裝後端依賴**
 ```bash
 go mod download
 ```
 
-4. **運行後端服務器**
+4. **安裝前端依賴**
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+5. **運行後端服務器**
 ```bash
 go run main.go
 ```
 
-服務器將在 `http://localhost:8080` 啟動
+後端服務器將在 `http://localhost:8080` 啟動
 
-5. **訪問前端**
+6. **運行前端開發伺服器**
 
-打開瀏覽器訪問：
-- 首頁：`http://localhost:8080/`
-- 登入：`http://localhost:8080/login.html`
-- 註冊：`http://localhost:8080/register.html`
+在新的終端視窗中：
+```bash
+cd frontend
+npm run dev
+```
+
+前端開發伺服器將在 `http://localhost:5173` 啟動
+
+7. **訪問應用**
+
+打開瀏覽器訪問：`http://localhost:5173`
 
 ## 專案結構
 
@@ -83,12 +102,19 @@ CareFinder/
 │   └── auth.go          # JWT 認證中間件
 ├── models/              # 資料模型
 │   └── models.go
-├── routes/               # 路由配置
+├── routes/              # 路由配置
 │   └── routes.go
-├── static/              # 靜態文件（前端）
-│   ├── css/             # CSS 文件
-│   ├── js/              # JavaScript 文件
-│   └── *.html           # HTML 頁面
+├── frontend/            # Vue 3 前端應用
+│   ├── src/
+│   │   ├── components/  # Vue 組件
+│   │   ├── views/       # 頁面組件
+│   │   ├── router/      # 路由配置
+│   │   ├── stores/      # Pinia 狀態管理
+│   │   ├── services/    # API 服務層
+│   │   └── assets/      # 靜態資源
+│   ├── package.json
+│   └── vite.config.js
+├── static/              # 舊版前端文件（已棄用，保留作為參考）
 ├── utils/               # 工具函數
 │   ├── password.go      # 密碼加密
 │   └── token/           # JWT Token 處理
@@ -158,11 +184,18 @@ CareFinder/
 
 ### 前端開發
 
-前端使用 Tailwind CSS CDN，無需額外構建步驟。如需使用本地 Tailwind：
+前端使用 Vue 3 + Vite，開發時會自動熱重載。詳細說明請參考 `frontend/README.md`。
 
+開發模式：
 ```bash
-npm install
-npm run build-css
+cd frontend
+npm run dev
+```
+
+構建生產版本：
+```bash
+cd frontend
+npm run build
 ```
 
 ### 資料庫

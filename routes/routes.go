@@ -1,37 +1,31 @@
 package routes
 
 import (
+	"time"
+
 	"carefinder/controllers"
 	"carefinder/middleware"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
-	// Serve static files
-	r.Static("/static", "./static")
+	// Configure CORS middleware for frontend-backend separation
+	config := cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000"}, // Vue dev server default ports
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	r.Use(cors.New(config))
 
-	// Serve HTML files
-	r.StaticFile("/", "./static/index.html")
-	r.StaticFile("/index.html", "./static/index.html")
-	r.StaticFile("/login.html", "./static/login.html")
-	r.StaticFile("/register.html", "./static/register.html")
-	r.StaticFile("/dashboard.html", "./static/dashboard.html")
-	r.StaticFile("/caregiver-search.html", "./static/caregiver-search.html")
-	r.StaticFile("/caregiver-profile.html", "./static/caregiver-profile.html")
-	r.StaticFile("/caregiver-profile-setup.html", "./static/caregiver-profile-setup.html")
-	r.StaticFile("/caregiver-availability.html", "./static/caregiver-availability.html")
-	r.StaticFile("/caregiver-licenses.html", "./static/caregiver-licenses.html")
-	r.StaticFile("/contracts.html", "./static/contracts.html")
-	r.StaticFile("/contract-details.html", "./static/contract-details.html")
-	r.StaticFile("/create-contract.html", "./static/create-contract.html")
-	r.StaticFile("/profile.html", "./static/profile.html")
-	r.StaticFile("/admin-dashboard.html", "./static/admin-dashboard.html")
-
-	// Note: Uploads are now served through protected routes only
-	// r.Static("/uploads", "./uploads") - Removed for security
+	// Note: Static file serving removed for frontend-backend separation
+	// Frontend is now served separately using Vue.js
 
 	// Group API routes
 	api := r.Group("/api/v1")
