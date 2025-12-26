@@ -4,7 +4,10 @@
       <div class="flex justify-between items-center h-16">
         <!-- Logo -->
         <div class="flex items-center">
-          <router-link to="/" class="text-2xl font-bold text-primary-600">
+          <router-link
+            :to="authStore.isAuthenticated ? '/dashboard' : '/'"
+            class="text-2xl font-bold text-primary-600"
+          >
             CareFinder
           </router-link>
         </div>
