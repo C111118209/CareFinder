@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: carefinder
+    env: go
+    # Render's free plan might sleep due to inactivity. 
+    # Choose a paid plan for production apps.
+    plan: free 
+    buildCommand: |
+      echo "Building frontend..."
+      cd frontend && npm install && npm run build
+      echo "Building backend..."
+      cd ..
+      go build -o main -ldflags="-w -s" .
+    startCommand: ./main
+    envVars:
+      - key: GIN_MODE
+        value: release
+      - key: DATABASE_URL
+        description: "Your external database connection string"
+        sync: false # Important: keeps secret out of git
+      - key: JWT_SECRET
+        description: "Your secret key for signing JWTs"
+        generateValue: true # Render can generate a random secret for you
