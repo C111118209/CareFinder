@@ -75,6 +75,13 @@ func GetAllCaregivers(c *gin.Context) {
 		return
 	}
 
+	// Remove password hashes from User objects
+	for i := range profiles {
+		if profiles[i].User.ID != 0 {
+			profiles[i].User.PasswordHash = ""
+		}
+	}
+
 	c.JSON(http.StatusOK, profiles)
 }
 

@@ -160,8 +160,11 @@ onMounted(async () => {
   loading.value = true
   try {
     const caregiverId = route.params.id
-    profile.value = await caregiverAPI.getProfile(caregiverId)
-    reviews.value = await reviewAPI.getCaregiverReviews(caregiverId)
+    const profileResponse = await caregiverAPI.getProfile(caregiverId)
+    profile.value = profileResponse.profile || profileResponse
+    
+    const reviewsResponse = await reviewAPI.getCaregiverReviews(caregiverId)
+    reviews.value = reviewsResponse.reviews || []
   } catch (error) {
     console.error('Load error:', error)
     alert('載入失敗：' + (error.response?.data?.error || error.message))

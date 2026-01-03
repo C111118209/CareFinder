@@ -163,7 +163,7 @@
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ caregiver.profile_id }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ caregiver.full_name }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ caregiver.user?.email || '-' }}
+                    {{ caregiver.User?.email || '-' }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ caregiver.phone || '-' }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -171,19 +171,19 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <span
-                      :class="caregiver.user?.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                      :class="(caregiver.User && caregiver.User.is_active) ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
                       class="px-2 py-1 text-xs rounded-full"
                     >
-                      {{ caregiver.user?.is_active ? '啟用' : '停用' }}
+                      {{ (caregiver.User && caregiver.User.is_active) ? '啟用' : '停用' }}
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <button
-                      @click="toggleCaregiverStatus(caregiver.profile_id, !caregiver.user?.is_active)"
-                      :class="caregiver.user?.is_active ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
+                      @click="toggleCaregiverStatus(caregiver.profile_id, !(caregiver.User && caregiver.User.is_active))"
+                      :class="(caregiver.User && caregiver.User.is_active) ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'"
                       class="btn-secondary text-sm text-white"
                     >
-                      {{ caregiver.user?.is_active ? '停用' : '啟用' }}
+                      {{ (caregiver.User && caregiver.User.is_active) ? '停用' : '啟用' }}
                     </button>
                   </td>
                 </tr>
@@ -331,7 +331,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { adminAPI, licenseAPI } from '@/services/api'
 import Navbar from '@/components/Navbar.vue'
 
@@ -571,6 +571,29 @@ const viewLicenseImage = async (proofUrl) => {
     alert('無法載入圖片：' + (error.message || '未知錯誤'))
   }
 }
+
+// Watch activeTab and load corresponding data when tab changes
+watch(activeTab, (newTab) => {
+  switch (newTab) {
+    case 'statistics':
+      if (!statistics.value) {
+        loadStatistics()
+      }
+      break
+    case 'users':
+      loadUsers()
+      break
+    case 'caregivers':
+      loadCaregivers()
+      break
+    case 'contracts':
+      loadContracts()
+      break
+    case 'licenses':
+      loadLicenses('pending')
+      break
+  }
+})
 
 onMounted(() => {
   loadStatistics()
