@@ -2,8 +2,9 @@
 所以就做了這麼一個網站
 
 操作影片 : https://youtu.be/_gKQpwPhhTs
-Github : https://github.com/C111118209/CareFinder
+簡報 : https://gamma.app/docs/CareFinder--k2dg4y0gj3a2gxr
 網站 : https://carefinder-iee2.onrender.com/
+Github : https://github.com/C111118209/CareFinder
 
 前端 Vue
 後端 Golang
