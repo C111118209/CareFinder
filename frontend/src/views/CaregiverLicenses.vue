@@ -297,18 +297,14 @@ const viewLicenseImage = async (proofUrl) => {
   }
 
   try {
-    let imageUrl = proofUrl
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+    let imageUrl = proofUrl
     
     if (proofUrl.startsWith('/uploads/licenses/')) {
       const filename = proofUrl.replace('/uploads/licenses/', '')
       imageUrl = `${API_BASE_URL}/caregivers/licenses/image/${filename}`
-    } else if (!proofUrl.startsWith('http')) {
-      if (proofUrl.startsWith('/api/v1/')) {
-        imageUrl = `http://localhost:8080${proofUrl}`
-      } else {
-        imageUrl = `${API_BASE_URL}${proofUrl}`
-      }
+    } else if (!proofUrl.startsWith('http') && !proofUrl.startsWith(API_BASE_URL)) {
+      imageUrl = `${API_BASE_URL}${proofUrl}`
     }
 
     // 使用 fetch 並添加 Authorization header
