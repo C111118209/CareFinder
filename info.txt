@@ -1,0 +1,11 @@
+另一堂課程「設計思考」剛好需要做一個原型
+所以就做了這麼一個網站
+
+操作影片 : https://youtu.be/_gKQpwPhhTs
+Github : https://github.com/C111118209/CareFinder
+網站 : https://carefinder-iee2.onrender.com/
+
+前端 Vue
+後端 Golang
+只是 DEMO 所以資料庫寫死了
+部屬在 Render 上
